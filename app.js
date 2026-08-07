@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),R=Math.PI/180,D=180/Math.PI,norm=x=>(x%360+360)%360;
 const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,catalogueMeta:null,fov:180,centerAz:180,centerEl:55,transitionStart:0,transitionDuration:1000};
-const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js');
+const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=42');
 const stars={
  Polaris:[37.95,89.26,1.98],Dubhe:[165.93,61.75,1.79],Merak:[165.46,56.38,2.37],Phecda:[178.46,53.69,2.44],Megrez:[183.86,57.03,3.31],Alioth:[193.51,55.96,1.76],Mizar:[200.98,54.93,2.23],Alkaid:[206.89,49.31,1.85],
  Caph:[2.29,59.15,2.28],Schedar:[10.13,56.54,2.24],Navi:[14.18,60.72,2.15],Ruchbah:[21.45,60.24,2.68],Segin:[28.60,63.67,3.35],
@@ -35,7 +35,7 @@ function viewTime(){return new Date(Date.now()+state.offset*60000)}
 function rotation(){return state.compass?-state.heading:state.rot}
 function project(az,el,w,h){
  if(state.fov>=180){const cx=w/2,cy=h*.54,rad=Math.min(w*.46,h*.405),rho=(90-el)/90*rad,a=(az+rotation())*R;return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad,visible:el>=0}}
- const cx=w/2,cy=h*.52,azc=state.compass?state.heading:state.centerAz,elc=state.centerEl;
+ const cx=w/2,cy=h*.52,azc=state.compass?norm(state.heading):norm(state.centerAz),elc=state.centerEl;
  const da=((((az-azc)+540)%360)-180)*R,er=el*R,ec=elc*R;
  const cosc=Math.sin(ec)*Math.sin(er)+Math.cos(ec)*Math.cos(er)*Math.cos(da);
  if(cosc<=0)return{x:-9999,y:-9999,rad:0,visible:false};
@@ -62,11 +62,11 @@ async function loadCatalogue(force=false){status('Loading orbital catalogue…',
 function requestPasses(force=false){if(!state.workerReady)return;if(!force&&Date.now()-state.lastPasses<60000)return;state.lastPasses=Date.now();worker.postMessage({type:'passes',time:Date.now(),lat:state.lat,lon:state.lon,layers:state.layers,minutes:360,step:2,minEl:20,maxMag:5})}
 function cardinal(a){return['N','NE','E','SE','S','SW','W','NW'][Math.round(norm(a)/45)%8]}
 function updateOrientationPill(){
+  const az=state.compass?norm(state.heading):norm(state.centerAz);
   if(state.fov>=180){
-    $('orientationPill').textContent=state.compass?(cardinal(state.heading)+' '+Math.round(state.heading)+'°'):'N • zenith';
+    $('orientationPill').textContent=state.compass?(cardinal(az)+' '+Math.round(az)+'°'):'N • zenith';
   }else{
-    const az=state.compass?state.heading:state.centerAz;
-    $('orientationPill').textContent=cardinal(az)+' '+Math.round(norm(az))+'° • '+state.fov+'°';
+    $('orientationPill').textContent=cardinal(az)+' '+Math.round(az)+'° • '+state.fov+'°';
   }
 }
 function renderPasses(passes){const list=$('passList');list.innerHTML='';if(!passes.length){list.innerHTML='<div class="empty">No sunlit passes brighter than magnitude 5 are predicted in the next six hours.</div>';$('nextTime').textContent='None soon';$('nextDesc').textContent='';return}for(const p of passes.slice(0,15)){const t=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),d=document.createElement('div');d.className='pass-item';d.innerHTML='<div><b>'+p.name+'</b><span>'+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • peak '+Math.round(p.max)+'° • est. mag '+p.minMag.toFixed(1)+'</span></div><strong>'+t+'</strong>';list.appendChild(d)}const p=passes[0];$('nextTime').textContent=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('nextDesc').textContent=p.name+' • '+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • mag '+p.minMag.toFixed(1)}
@@ -113,8 +113,14 @@ $('satRole').textContent=satelliteRole(best);
 $('satService').textContent=serviceYear(best);
 $('satEpochAge').textContent=epochAgeText(best);
 $('satSheet').style.display='block'}
-async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();}
-window.addEventListener('deviceorientation',e=>{const h=typeof e.webkitCompassHeading==='number'?e.webkitCompassHeading:(e.alpha==null?state.heading:360-e.alpha);state.heading=norm(h)});
+async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° field follows the phone compass. Drag vertically to change elevation.';}
+window.addEventListener('deviceorientation',e=>{
+  const h=typeof e.webkitCompassHeading==='number'
+    ? e.webkitCompassHeading
+    : (e.alpha==null?state.heading:360-e.alpha);
+  state.heading=norm(h);
+  if(state.compass)updateOrientationPill();
+});
 canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.lastX=e.clientX;state.startY=state.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{
   if(!state.drag)return;
   const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
@@ -129,11 +135,22 @@ canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.las
 });canvas.addEventListener('pointerup',e=>{const moved=Math.hypot(e.clientX-state.startX,e.clientY-state.startY);state.drag=false;if(moved<7)satClick(e)});
 $('timeline').addEventListener('input',e=>{state.offset=+e.target.value;$('liveButton').classList.toggle('active',state.offset===0);$('timeLabel').textContent=state.offset===0?'Now':(state.offset>0?'+'+state.offset+' min':state.offset+' min');$('localTimeLabel').textContent=viewTime().toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'});requestPositions(true)});
 $('liveButton').onclick=()=>{$('timeline').value=0;state.offset=0;$('liveButton').classList.add('active');$('timeLabel').textContent='Now';$('localTimeLabel').textContent='Live sky';requestPositions(true)};
-function setFov(v){state.fov=+v;document.querySelectorAll('.fov-chip').forEach(b=>b.classList.toggle('on',+b.dataset.fov===state.fov));if(state.fov>=180){$('orientationPill').textContent=state.compass?'compass aligned':'N • zenith';$('fovHint').textContent='All-sky zenith view. Choose a tighter field, then drag to pan across the sky.'}else{$('orientationPill').textContent=state.fov+'° field';$('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.'}}
+function setFov(v){
+  state.fov=+v;
+  document.querySelectorAll('.fov-chip').forEach(b=>b.classList.toggle('on',+b.dataset.fov===state.fov));
+  updateOrientationPill();
+  if(state.fov>=180){
+    $('fovHint').textContent='All-sky zenith view. Choose a tighter field, then drag to pan across the sky.';
+  }else if(state.compass){
+    $('fovHint').textContent='Focused '+state.fov+'° field follows the phone compass. Drag vertically to change elevation.';
+  }else{
+    $('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.';
+  }
+}
 document.querySelectorAll('.fov-chip').forEach(b=>b.onclick=()=>setFov(+b.dataset.fov));
 document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const l=b.dataset.layer;state.layers[l]=!state.layers[l];b.classList.toggle('on',state.layers[l]);requestPositions(true);requestPasses(true)});
 $('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=Math.max(5,Math.min(90,state.selected.el));if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
-$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
+$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
 function toggle(id,key){$(id).onclick=()=>{state[key]=!state[key];$(id).classList.toggle('on',state[key])}}toggle('constToggle','constellations');toggle('milkyToggle','milky');toggle('labelsToggle','labels');toggle('brightnessToggle','brightness');toggle('stationAlert','stationAlert');toggle('trainAlert','trainAlert');
 $('notifyButton').onclick=async()=>{if(!('Notification'in window)){return $('alertStatus').textContent='Notifications API is unavailable in this browser.'}const p=await Notification.requestPermission();$('alertStatus').textContent=p==='granted'?'Notifications enabled. StarWatcher can alert you while the PWA is active.':'Notification permission was not granted.'};
 $('refreshData').onclick=()=>loadCatalogue(true);
@@ -141,27 +158,30 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.quer
 try{const l=JSON.parse(safeGet('sw3_loc'));if(l)setLocation(l.lat,l.lon,l.name)}catch(e){}
 
 let skyFullscreen=false;
-$('fullscreenSky').onclick=async()=>{
-  skyFullscreen=!skyFullscreen;
-  const card=document.querySelector('.sky-card');
-  card.classList.toggle('sky-fullscreen',skyFullscreen);
-  $('fullscreenSky').textContent=skyFullscreen?'×':'⛶';
-  document.body.style.overflow=skyFullscreen?'hidden':'';
-  setTimeout(resize,60);
-  if(skyFullscreen && document.documentElement.requestFullscreen){
-    try{await document.documentElement.requestFullscreen()}catch(e){}
-  }else if(!skyFullscreen && document.fullscreenElement && document.exitFullscreen){
-    try{await document.exitFullscreen()}catch(e){}
-  }
-};
+const fullscreenButton=$('fullscreenSky');
+if(fullscreenButton){
+  fullscreenButton.onclick=async()=>{
+    skyFullscreen=!skyFullscreen;
+    const card=document.querySelector('.sky-card');
+    card.classList.toggle('sky-fullscreen',skyFullscreen);
+    fullscreenButton.textContent=skyFullscreen?'×':'⛶';
+    document.body.style.overflow=skyFullscreen?'hidden':'';
+    setTimeout(resize,60);
+    if(skyFullscreen && document.documentElement.requestFullscreen){
+      try{await document.documentElement.requestFullscreen()}catch(e){}
+    }else if(!skyFullscreen && document.fullscreenElement && document.exitFullscreen){
+      try{await document.exitFullscreen()}catch(e){}
+    }
+  };
+}
 document.addEventListener('fullscreenchange',()=>{
   if(!document.fullscreenElement && skyFullscreen){
     skyFullscreen=false;
     document.querySelector('.sky-card').classList.remove('sky-fullscreen');
-    $('fullscreenSky').textContent='⛶';
+    if(fullscreenButton)fullscreenButton.textContent='⛶';
     document.body.style.overflow='';
     setTimeout(resize,60);
   }
 });
 
-window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=42').catch(()=>{}));

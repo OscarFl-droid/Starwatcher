@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StarWatcher">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./styles.css?v=42">
 <title>StarWatcher</title>
 </head>
 <body>
@@ -29,7 +29,8 @@
           <span class="pill" id="orientationPill">N • zenith</span>
           <span class="pill" id="utc">UTC --:--:--</span>
         </div>
-<div id="status" class="status">
+        <button id="fullscreenSky" class="fullscreen-button" aria-label="Toggle fullscreen sky">⛶</button>
+        <div id="status" class="status">
           <b>Loading orbital catalogue…</b>
           <span>Preparing live satellite layers</span>
         </div>
@@ -172,6 +173,6 @@
   <button data-page="settings">⚙︎<span>View</span></button>
 </nav>
 
-<script src="./app.js"></script>
+<script src="./app.js?v=42"></script>
 </body>
 </html>
