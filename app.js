@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),R=Math.PI/180,D=180/Math.PI,norm=x=>(x%360+360)%360;
 const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,alertsArmed:true,latestPasses:[],catalogueMeta:null,fov:180,centerAz:180,centerEl:55,transitionStart:0,transitionDuration:1000};
-const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=44');
+const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=45');
 const stars={
  Polaris:[37.95,89.26,1.98],Dubhe:[165.93,61.75,1.79],Merak:[165.46,56.38,2.37],Phecda:[178.46,53.69,2.44],Megrez:[183.86,57.03,3.31],Alioth:[193.51,55.96,1.76],Mizar:[200.98,54.93,2.23],Alkaid:[206.89,49.31,1.85],
  Caph:[2.29,59.15,2.28],Schedar:[10.13,56.54,2.24],Navi:[14.18,60.72,2.15],Ruchbah:[21.45,60.24,2.68],Segin:[28.60,63.67,3.35],
@@ -34,19 +34,24 @@ function galToEq(l,b=0){const lr=l*R,br=b*R;const x=Math.cos(br)*Math.cos(lr),y=
 function viewTime(){return new Date(Date.now()+state.offset*60000)}
 function rotation(){return state.compass?-state.heading:state.rot}
 function project(az,el,w,h){
- if(state.fov>=180){const cx=w/2,cy=h*.54,rad=Math.min(w*.46,h*.405),rho=(90-el)/90*rad,a=(az+rotation())*R;return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad,visible:el>=0}}
- const cx=w/2,cy=h*.52,azc=state.compass?norm(state.heading):norm(state.centerAz),elc=state.centerEl;
- const da=((((az-azc)+540)%360)-180)*R,er=el*R,ec=elc*R;
- const cosc=Math.sin(ec)*Math.sin(er)+Math.cos(ec)*Math.cos(er)*Math.cos(da);
- if(cosc<=0)return{x:-9999,y:-9999,rad:0,visible:false};
- const bearing=Math.atan2(Math.cos(er)*Math.sin(da),Math.sin(er)*Math.cos(ec)-Math.cos(er)*Math.sin(ec)*Math.cos(da));
- const dist=Math.acos(Math.max(-1,Math.min(1,cosc)))*D,rad=Math.min(w,h*.9)/2,rr=dist*(rad/(state.fov/2));
- return{x:cx+rr*Math.sin(bearing),y:cy-rr*Math.cos(bearing),rad,visible:dist<=state.fov/2}
+  if(state.fov>=180){
+    const cx=w/2,cy=h*.54,rad=Math.min(w*.46,h*.405),rho=(90-el)/90*rad;
+    const topHeading=state.compass?state.heading:0;
+    const a=(az-topHeading+state.rot)*R;
+    return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad,visible:el>=0};
+  }
+  const cx=w/2,cy=h*.52;
+  const radius=Math.min(w*.46,h*.42);
+  const angularDistance=90-el;
+  const topHeading=state.compass?state.heading:state.centerAz;
+  const a=(az-topHeading)*R;
+  const rho=(angularDistance/(state.fov/2))*radius;
+  return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad:radius,visible:el>=0&&angularDistance<=state.fov/2};
 }
 function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
 function drawMilky(date,w,h){if(!state.milky)return;const tracks=[-8,0,8];for(const b of tracks){ctx.beginPath();let started=false;for(let l=0;l<=360;l+=3){const e=galToEq(l,b),q=altaz(e.ra,e.dec,date);if(q.el<0){started=false;continue}const p=project(q.az,q.el,w,h);if(!p.visible){started=false;continue}if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y)}ctx.strokeStyle=b===0?'rgba(124,151,220,.13)':'rgba(124,151,220,.055)';ctx.lineWidth=b===0?20:12;ctx.stroke()}}
 function drawStars(date,w,h){const pos={};for(const [name,s] of Object.entries(stars)){const q=altaz(s[0],s[1],date);if(q.el<0)continue;const pp=project(q.az,q.el,w,h);if(pp.visible)pos[name]=pp}if(state.constellations){ctx.lineWidth=.8;ctx.strokeStyle='rgba(126,151,205,.28)';for(const item of lines){const seqs=Array.isArray(item[1][0])?item.slice(1):[item[1]];for(const seq of seqs){ctx.beginPath();let begun=false;for(const n of seq){if(!pos[n]){begun=false;continue}if(!begun){ctx.moveTo(pos[n].x,pos[n].y);begun=true}else ctx.lineTo(pos[n].x,pos[n].y)}ctx.stroke()}}}
- for(const [name,s] of Object.entries(stars)){const p=pos[name];if(!p)continue;const size=Math.max(1.25,3.6-s[2]);ctx.beginPath();ctx.fillStyle=s[2]<.5?'#ffd977':'#edf2ff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s[2]<1?6:2;ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(s[2]<.8){ctx.fillStyle='#aeb9d5';ctx.font='10px -apple-system';ctx.fillText(name,p.x+5,p.y-4)}}}
+ for(const [name,s] of Object.entries(stars)){const p=pos[name];if(!p)continue;const size=Math.max(1.25,3.6-s[2]);ctx.beginPath();ctx.fillStyle=s[2]<.5?'#ffd977':'#edf2ff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s[2]<1?6:2;ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(s[2]<2.6){ctx.fillStyle='#aeb9d5';ctx.font='9px -apple-system';ctx.fillText(name,p.x+5,p.y-4)}}}
 function interpAngle(a,b,k){let d=((b-a+540)%360)-180;return norm(a+d*k)}
 function updateDisplay(){const k=Math.max(0,Math.min(1,(performance.now()-state.transitionStart)/state.transitionDuration));const seen=new Set();for(const s of state.target){const id=String(s.id);seen.add(id);let d=state.display.get(id);if(!d){d={...s,fromAz:s.az,fromEl:s.el,toAz:s.az,toEl:s.el};state.display.set(id,d)}d.az=interpAngle(d.fromAz??d.az,d.toAz??d.az,k);d.el=(d.fromEl??d.el)+((d.toEl??d.el)-(d.fromEl??d.el))*k;d.alt=s.alt;d.range=s.range;d.sunlit=s.sunlit;d.mag=s.mag;d.layer=s.layer;d.name=s.name;d.phase=s.phase}for(const[id,d]of state.display){if(!seen.has(id)&&d.el<-2)state.display.delete(id)}}
 function beginTransition(next){const cur=new Map();for(const[id,d]of state.display)cur.set(id,{az:d.az,el:d.el});state.target=next;for(const s of next){const id=String(s.id);let d=state.display.get(id);if(!d){d={...s,fromAz:s.az,fromEl:s.el,toAz:s.az,toEl:s.el};state.display.set(id,d)}else{const c=cur.get(id)||{az:d.az,el:d.el};d.fromAz=c.az;d.fromEl=c.el;d.toAz=s.az;d.toEl=s.el}}state.transitionStart=performance.now();state.transitionDuration=1000}
@@ -66,7 +71,7 @@ function updateOrientationPill(){
   if(state.fov>=180){
     $('orientationPill').textContent=state.compass?(cardinal(az)+' '+Math.round(az)+'°'):'N • zenith';
   }else{
-    $('orientationPill').textContent=cardinal(az)+' '+Math.round(az)+'° • '+state.fov+'°';
+    $('orientationPill').textContent=(state.compass?cardinal(az)+' '+Math.round(az)+'° • ':'')+state.fov+'° zenith';
   }
 }
 function renderPasses(passes){
@@ -196,7 +201,7 @@ $('satRole').textContent=satelliteRole(best);
 $('satService').textContent=serviceYear(best);
 $('satEpochAge').textContent=epochAgeText(best);
 $('satSheet').style.display='block'}
-async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° field follows the phone compass. Drag vertically to change elevation.';}
+async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone rotates with the phone compass.';}
 window.addEventListener('deviceorientation',e=>{
   const h=typeof e.webkitCompassHeading==='number'
     ? e.webkitCompassHeading
@@ -206,34 +211,36 @@ window.addEventListener('deviceorientation',e=>{
 });
 canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.lastX=e.clientX;state.startY=state.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{
   if(!state.drag)return;
-  const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
+  const dx=e.clientX-state.lastX;
   state.lastX=e.clientX;state.lastY=e.clientY;
   if(state.fov>=180){
     if(!state.compass)state.rot+=dx*.35;
-  }else{
+  }else if(!state.compass){
     const scale=state.fov/Math.min(canvas.clientWidth,canvas.clientHeight*.9);
-    if(!state.compass)state.centerAz=norm(state.centerAz-dx*scale);
-    state.centerEl=Math.max(2,Math.min(90,state.centerEl+dy*scale));
+    state.centerAz=norm(state.centerAz-dx*scale);
+    updateOrientationPill();
   }
 });canvas.addEventListener('pointerup',e=>{const moved=Math.hypot(e.clientX-state.startX,e.clientY-state.startY);state.drag=false;if(moved<7)satClick(e)});
 $('timeline').addEventListener('input',e=>{state.offset=+e.target.value;$('liveButton').classList.toggle('active',state.offset===0);$('timeLabel').textContent=state.offset===0?'Now':(state.offset>0?'+'+state.offset+' min':state.offset+' min');$('localTimeLabel').textContent=viewTime().toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'});requestPositions(true)});
 $('liveButton').onclick=()=>{$('timeline').value=0;state.offset=0;$('liveButton').classList.add('active');$('timeLabel').textContent='Now';$('localTimeLabel').textContent='Live sky';requestPositions(true)};
 function setFov(v){
   state.fov=+v;
+  state.centerEl=90;
+  if(state.compass)state.centerAz=norm(state.heading);
   document.querySelectorAll('.fov-chip').forEach(b=>b.classList.toggle('on',+b.dataset.fov===state.fov));
   updateOrientationPill();
   if(state.fov>=180){
-    $('fovHint').textContent='All-sky zenith view. Choose a tighter field, then drag to pan across the sky.';
+    $('fovHint').textContent='All-sky zenith view. Compass alignment rotates the map to match the phone heading.';
   }else if(state.compass){
-    $('fovHint').textContent='Focused '+state.fov+'° field follows the phone compass. Drag vertically to change elevation.';
+    $('fovHint').textContent=state.fov+'° cone centred directly overhead. Turn the phone and the map rotates like a compass.';
   }else{
-    $('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.';
+    $('fovHint').textContent=state.fov+'° cone centred directly overhead. Enable compass alignment for live heading rotation.';
   }
 }
 document.querySelectorAll('.fov-chip').forEach(b=>b.onclick=()=>setFov(+b.dataset.fov));
 document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const l=b.dataset.layer;state.layers[l]=!state.layers[l];b.classList.toggle('on',state.layers[l]);requestPositions(true);requestPasses(true)});
-$('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=Math.max(5,Math.min(90,state.selected.el));if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
-$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
+$('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=90;if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
+$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone. Enable compass alignment to match the phone heading.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
 function toggle(id,key){$(id).onclick=()=>{state[key]=!state[key];$(id).classList.toggle('on',state[key])}}toggle('constToggle','constellations');toggle('milkyToggle','milky');toggle('labelsToggle','labels');toggle('brightnessToggle','brightness');toggle('stationAlert','stationAlert');toggle('trainAlert','trainAlert');
 $('notifyButton').onclick=async()=>{
   state.alertsArmed=true;
@@ -264,25 +271,17 @@ try{const l=JSON.parse(safeGet('sw3_loc'));if(l)setLocation(l.lat,l.lon,l.name)}
 
 
 function rezeroView(){
-  if(state.compass){
-    state.centerAz=norm(state.heading);
-  }else{
-    state.centerAz=180;
-    state.rot=0;
-  }
-  state.centerEl=57;
+  state.centerEl=90;
+  state.centerAz=state.compass?norm(state.heading):0;
+  state.rot=0;
   updateOrientationPill();
   if(state.fov<180){
     $('fovHint').textContent=state.compass
-      ? 'Re-zeroed to current compass heading at 57° elevation.'
-      : 'Re-zeroed to south at 57° elevation. Drag to pan or enable compass alignment.';
+      ? 'Re-zeroed to the zenith. The map rotates with the phone compass.'
+      : 'Re-zeroed to the zenith. Enable compass alignment to rotate the map with the phone.';
   }
   const b=$('rezeroSky');
-  if(b){
-    const old=b.textContent;
-    b.textContent='✓';
-    setTimeout(()=>b.textContent=old,700);
-  }
+  if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,700)}
 }
 
 let skyFullscreen=false;
@@ -314,4 +313,4 @@ document.addEventListener('fullscreenchange',()=>{
   }
 });
 
-window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=44').catch(()=>{}));
+window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=45').catch(()=>{}));
