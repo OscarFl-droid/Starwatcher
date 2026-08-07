@@ -1,4 +1,4 @@
-name: Update Starlink catalogue
+name: Update orbital catalogue
 
 on:
   workflow_dispatch:
@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: orbital-catalogue
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -16,50 +20,148 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Download current CelesTrak Starlink data
+      - name: Download and combine orbital data
+        shell: bash
         run: |
-          mkdir -p data
-          curl --fail --location \
+          set -euo pipefail
+
+          mkdir -p data /tmp/sw
+
+          fetch() {
+            local url="$1"
+            local out="$2"
+
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --retry 4 \
+              --retry-delay 8 \
+              --user-agent "StarWatcher/3 GitHub catalogue updater" \
+              "$url" \
+              -o "$out"
+          }
+
+          fetch \
             "https://celestrak.org/NORAD/elements/gp.php?GROUP=STARLINK&FORMAT=JSON" \
-            -o /tmp/starlink.json
+            /tmp/sw/starlink.json
+
+          fetch \
+            "https://celestrak.org/NORAD/elements/gp.php?GROUP=ONEWEB&FORMAT=JSON" \
+            /tmp/sw/oneweb.json
+
+          fetch \
+            "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=JSON" \
+            /tmp/sw/iss.json
+
+          fetch \
+            "https://celestrak.org/NORAD/elements/gp.php?CATNR=48274&FORMAT=JSON" \
+            /tmp/sw/tiangong.json
+
+          fetch \
+            "https://celestrak.org/NORAD/elements/gp.php?CATNR=20580&FORMAT=JSON" \
+            /tmp/sw/hubble.json
 
           python3 - <<'PY'
           import json
-          import datetime
           import pathlib
+          import datetime
 
-          data = json.loads(pathlib.Path("/tmp/starlink.json").read_text())
+          src = pathlib.Path("/tmp/sw")
 
-          if not isinstance(data, list) or len(data) < 100:
-              raise SystemExit("Invalid CelesTrak response")
+          groups = [
+              ("starlink", "starlink.json"),
+              ("oneweb", "oneweb.json"),
+              ("station", "iss.json"),
+              ("station", "tiangong.json"),
+              ("science", "hubble.json"),
+          ]
 
-          output = {
+          merged = []
+          seen = set()
+          counts = {}
+
+          for layer, filename in groups:
+              data = json.loads((src / filename).read_text())
+
+              if not isinstance(data, list):
+                  raise SystemExit(
+                      f"{filename}: expected JSON list"
+                  )
+
+              added = 0
+
+              for obj in data:
+                  cat = str(obj.get("NORAD_CAT_ID", ""))
+
+                  if not cat or cat in seen:
+                      continue
+
+                  seen.add(cat)
+                  obj["_layer"] = layer
+                  merged.append(obj)
+                  added += 1
+
+              counts[layer] = counts.get(layer, 0) + added
+
+          if counts.get("starlink", 0) < 100:
+              raise SystemExit(
+                  "Starlink catalogue unexpectedly small"
+              )
+
+          if counts.get("oneweb", 0) < 100:
+              raise SystemExit(
+                  "OneWeb catalogue unexpectedly small"
+              )
+
+          payload = {
               "meta": {
-                  "source": "CelesTrak",
+                  "source": "CelesTrak GP JSON",
                   "fetched_at": datetime.datetime.now(
                       datetime.timezone.utc
                   ).isoformat(),
-                  "count": len(data)
+                  "count": len(merged),
+                  "layers": counts
               },
-              "objects": data
+              "objects": merged
           }
 
-          pathlib.Path("data/starlink.json").write_text(
-              json.dumps(output, separators=(",", ":"))
+          pathlib.Path(
+              "data/catalogue.json"
+          ).write_text(
+              json.dumps(
+                  payload,
+                  separators=(",", ":")
+              )
+          )
+
+          print(
+              "Catalogue records:",
+              len(merged),
+              counts
           )
           PY
 
-      - name: Commit updated catalogue
+      - name: Commit catalogue if changed
+        shell: bash
         run: |
-          git config user.name "StarWatcher data bot"
-          git config user.email "actions@users.noreply.github.com"
+          set -e
 
-          git add data/starlink.json
+          git config user.name \
+            "StarWatcher data bot"
+
+          git config user.email \
+            "actions@users.noreply.github.com"
+
+          git add data/catalogue.json
 
           if git diff --cached --quiet; then
-            echo "No changes"
+            echo "No catalogue changes."
             exit 0
           fi
 
-          git commit -m "Update Starlink catalogue"
+          git commit \
+            -m "Update orbital catalogue"
+
           git push
