@@ -1,21 +1,32 @@
-# StarWatcher v4 — Focused real-time sky tracker
+# StarWatcher v4.1
 
-This update removes camera/AR mode and replaces it with a true angular field-of-view system.
+This release fixes focused-view compass behaviour and adds fullscreen sky mode plus richer satellite telemetry.
 
-## Field of view
-Select **15°, 30°, 60°, 90°, or All sky**. In focused modes, drag horizontally to pan in azimuth and vertically to pan in elevation. Tap a satellite, then choose **Center focused view here** to put it at the centre of the narrow field.
+## Focused view + compass
+In 15°, 30°, 60° and 90° modes, enabling Automatic compass alignment now makes the focused field centre directly on the phone compass heading. It no longer adds the heading to the old manual azimuth. Vertical dragging remains available to change the elevation centre while compass alignment is active.
+
+## Fullscreen sky
+The ⛶ button expands the sky card to the entire phone viewport. On browsers that support the Fullscreen API, StarWatcher also requests browser fullscreen; on iPhone Safari the CSS fullscreen view still works even where the API is restricted.
+
+## Live engine status
+The green “Live orbital engine ready” message now fades away automatically after 1.8 seconds. Errors remain visible.
+
+## Satellite detail sheet
+Tapping a satellite now shows:
+- current orbital speed (km/s)
+- orbital period
+- orbital inclination
+- estimated brightness
+- lighting state
+- functional role
+- service/launch year derived from the international designator
+- age of the current orbital element epoch
+- altitude, observer range, azimuth and elevation
+
+Service year is intentionally shown as a year rather than a fabricated exact launch date because the standard CelesTrak GP JSON international designator identifies launch year and launch sequence, not the precise launch date.
 
 ## Real-time architecture
-- GitHub Actions catalogue refresh: automatically every **2 hours**.
-- SGP4 orbital solutions: calculated off the UI thread in `orbit-worker.js` every **1 second**.
-- Screen rendering: `requestAnimationFrame`, normally approximately **60 fps** on modern smartphones.
-- Satellite motion: each new one-second orbital solution becomes an interpolation target; dots move continuously between solutions rather than jumping.
-- The main UI thread never performs the bulk constellation propagation.
-
-## Upgrade from v3
-This package is intended as an **overlay update**. Keep your existing populated `data/catalogue.json` and existing `.github/workflows/update-starlink.yml`; both already provide the data architecture required by v4. Replace the app files from the overlay package.
-
-The workflow must retain the two-hour schedule:
-`cron: "17 */2 * * *"`
-
-After deployment, Safari may briefly show the older cached PWA. Reload the page once or twice, or close and reopen the Home Screen app; v4 uses a new service-worker cache version.
+- GitHub Actions catalogue refresh: every 2 hours
+- SGP4 propagation: every 1 second in a Web Worker
+- Rendering: requestAnimationFrame (~60 fps)
+- Motion: one-second propagation solutions are interpolated continuously on-screen

@@ -15,7 +15,18 @@ const stars={
 };
 const lines=[['Ursa Major',['Dubhe','Merak','Phecda','Megrez','Alioth','Mizar','Alkaid']],['Cassiopeia',['Caph','Schedar','Navi','Ruchbah','Segin']],['Orion',['Betelgeuse','Bellatrix','Mintaka','Alnilam','Alnitak','Saiph','Rigel']],['Lyra',['Vega','Sheliak','Sulafat','Vega']],['Cygnus',['Deneb','Sadr','Gienah'],['Deneb','Sadr','Albireo']],['Aquila',['Tarazed','Altair','Alshain']],['Leo',['Regulus','Algieba','Zosma','Denebola']],['Gemini',['Castor','Pollux']],['Taurus',['Aldebaran','Elnath']]];
 function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function status(a,b,type=''){const e=$('status');e.className='status '+type;e.innerHTML='<b>'+a+'</b><span>'+b+'</span>'}
+let statusTimer=null;
+function status(a,b,type=''){
+  const e=$('status');
+  if(statusTimer){clearTimeout(statusTimer);statusTimer=null}
+  e.className='status '+type;
+  e.innerHTML='<b>'+a+'</b><span>'+b+'</span>';
+  if(type==='good'){
+    statusTimer=setTimeout(()=>e.classList.add('hidden'),1800);
+  }else{
+    e.classList.remove('hidden');
+  }
+}
 function julian(date){return date/86400000+2440587.5}
 function gmst(date){const jd=julian(date),T=(jd-2451545)/36525;return norm(280.46061837+360.98564736629*(jd-2451545)+.000387933*T*T-T*T*T/38710000)}
 function altaz(ra,dec,date){const H=norm(gmst(date)+state.lon-ra)*R,ph=state.lat*R,de=dec*R,el=Math.asin(Math.sin(ph)*Math.sin(de)+Math.cos(ph)*Math.cos(de)*Math.cos(H)),az=Math.atan2(-Math.sin(H)*Math.cos(de),Math.sin(de)*Math.cos(ph)-Math.cos(de)*Math.sin(ph)*Math.cos(H));return{az:norm(az*D),el:el*D}}
@@ -50,6 +61,14 @@ worker.onmessage=e=>{const m=e.data;if(m.type==='ready'){state.workerReady=true;
 async function loadCatalogue(force=false){status('Loading orbital catalogue…','Starlink, OneWeb, stations and Hubble');try{let r=await fetch('./data/catalogue.json?'+(force?Date.now():'v=4'),{cache:force?'no-store':'default'});if(!r.ok)throw new Error('HTTP '+r.status);const p=await r.json();if(!p.objects||p.objects.length<100)throw new Error('Catalogue has not been populated yet');state.catalogueMeta=p.meta||{};worker.postMessage({type:'catalogue',objects:p.objects});const dt=p.meta&&p.meta.fetched_at?new Date(p.meta.fetched_at):null;if(dt){const age=(Date.now()-dt)/3600000;$('catalogueAge').textContent=age<1?Math.round(age*60)+' min old':age.toFixed(1)+' h old'}$('catalogueInfo').textContent=(p.meta.count||p.objects.length).toLocaleString()+' orbital records • '+(dt?'updated '+dt.toLocaleString():'update time unknown')}catch(e){status('Orbital catalogue unavailable',e.message+'. Run the GitHub “Update orbital catalogue” workflow once.','warn')}}
 function requestPasses(force=false){if(!state.workerReady)return;if(!force&&Date.now()-state.lastPasses<60000)return;state.lastPasses=Date.now();worker.postMessage({type:'passes',time:Date.now(),lat:state.lat,lon:state.lon,layers:state.layers,minutes:360,step:2,minEl:20,maxMag:5})}
 function cardinal(a){return['N','NE','E','SE','S','SW','W','NW'][Math.round(norm(a)/45)%8]}
+function updateOrientationPill(){
+  if(state.fov>=180){
+    $('orientationPill').textContent=state.compass?(cardinal(state.heading)+' '+Math.round(state.heading)+'°'):'N • zenith';
+  }else{
+    const az=state.compass?state.heading:state.centerAz;
+    $('orientationPill').textContent=cardinal(az)+' '+Math.round(norm(az))+'° • '+state.fov+'°';
+  }
+}
 function renderPasses(passes){const list=$('passList');list.innerHTML='';if(!passes.length){list.innerHTML='<div class="empty">No sunlit passes brighter than magnitude 5 are predicted in the next six hours.</div>';$('nextTime').textContent='None soon';$('nextDesc').textContent='';return}for(const p of passes.slice(0,15)){const t=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),d=document.createElement('div');d.className='pass-item';d.innerHTML='<div><b>'+p.name+'</b><span>'+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • peak '+Math.round(p.max)+'° • est. mag '+p.minMag.toFixed(1)+'</span></div><strong>'+t+'</strong>';list.appendChild(d)}const p=passes[0];$('nextTime').textContent=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('nextDesc').textContent=p.name+' • '+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • mag '+p.minMag.toFixed(1)}
 function checkAlerts(arr){if(state.offset!==0)return;const now=Date.now();if(state.stationAlert){for(const s of arr.filter(x=>x.layer==='station'&&x.sunlit&&x.el>10&&x.mag<2)){const key='station-'+s.id+'-'+new Date().toDateString();if(!state.notified.has(key)){state.notified.add(key);fireAlert(s.name+' is visible now',Math.round(s.el)+'° high toward '+cardinal(s.az)+' • estimated mag '+s.mag.toFixed(1))}}}
  if(state.trainAlert){const sl=arr.filter(x=>x.layer==='starlink'&&x.sunlit&&x.el>10&&x.mag<5);let best=[];for(const a of sl){const group=sl.filter(b=>Math.abs(b.el-a.el)<7&&Math.abs((((b.az-a.az)+540)%360)-180)<10);if(group.length>best.length)best=group}if(best.length>=5){const key='train-'+Math.floor(now/1800000);if(!state.notified.has(key)){state.notified.add(key);fireAlert('Possible Starlink train visible',best.length+' sunlit Starlinks clustered near '+cardinal(best[0].az))}}}
@@ -58,20 +77,91 @@ function fireAlert(title,body){$('alertStatus').textContent=title+' — '+body;i
 function setLocation(lat,lon,name){state.lat=lat;state.lon=lon;state.name=name;$('locname').textContent=name;$('coords').textContent=Math.abs(lat).toFixed(4)+'° '+(lat>=0?'N':'S')+' · '+Math.abs(lon).toFixed(4)+'° '+(lon>=0?'E':'W');safeSet('sw3_loc',JSON.stringify({lat,lon,name}));requestPositions(true);requestPasses(true)}
 async function findPlace(){const q=$('place').value.trim();if(!q)return;try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(q),{headers:{'Accept-Language':navigator.language||'en'}}),a=await r.json();if(!a[0])throw new Error('Place not found');setLocation(+a[0].lat,+a[0].lon,a[0].display_name)}catch(e){status('Location search failed',e.message,'warn')}}
 function geolocate(){navigator.geolocation.getCurrentPosition(p=>setLocation(p.coords.latitude,p.coords.longitude,'Current location'),e=>status('Location unavailable','Allow precise location or type a place.','warn'),{enableHighAccuracy:true,timeout:12000,maximumAge:180000})}
-function satClick(e){const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=250;for(const p of state.points){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){best=p;bd=d}}if(!best)return;state.selected=best;$('satName').textContent=best.name;$('satEl').textContent=best.el.toFixed(1)+'°';$('satAz').textContent=best.az.toFixed(1)+'° '+cardinal(best.az);$('satAlt').textContent=Math.round(best.alt)+' km';$('satRange').textContent=Math.round(best.range)+' km';$('satMag').textContent=best.sunlit?(best.mag.toFixed(1)+' est.'):'shadow';$('satLight').textContent=best.sunlit?'Sunlit':'Earth shadow';$('satSheet').style.display='block'}
-async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');$('orientationPill').textContent=state.fov>=180?'compass aligned':state.fov+'° field'}
+function satelliteRole(s){
+  if(s.layer==='starlink')return 'Broadband communications';
+  if(s.layer==='oneweb')return 'Broadband communications';
+  if(s.layer==='station'){
+    if((s.name||'').toUpperCase().includes('ISS'))return 'Crewed research station';
+    if((s.name||'').toUpperCase().includes('TIANGONG')||(s.name||'').toUpperCase().includes('CSS'))return 'Crewed research station';
+    return 'Space station';
+  }
+  if(s.layer==='science')return 'Space telescope / science';
+  return 'Artificial satellite';
+}
+function serviceYear(s){
+  const id=String(s.objectId||'');
+  const m=id.match(/^(\d{4})-/);
+  return m?m[1]:'Unknown';
+}
+function epochAgeText(s){
+  if(!s.epoch)return 'Unknown';
+  const t=new Date(s.epoch).getTime();
+  if(!Number.isFinite(t))return 'Unknown';
+  const h=Math.max(0,(viewTime().getTime()-t)/3600000);
+  if(h<1)return Math.round(h*60)+' min';
+  if(h<48)return h.toFixed(1)+' h';
+  return (h/24).toFixed(1)+' d';
+}
+function satClick(e){const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=250;for(const p of state.points){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){best=p;bd=d}}if(!best)return;state.selected=best;$('satName').textContent=best.name;$('satEl').textContent=best.el.toFixed(1)+'°';$('satAz').textContent=best.az.toFixed(1)+'° '+cardinal(best.az);$('satAlt').textContent=Math.round(best.alt)+' km';
+$('satRange').textContent=Math.round(best.range)+' km';
+$('satSpeed').textContent=best.speed?best.speed.toFixed(2)+' km/s':'—';
+$('satPeriod').textContent=best.period?best.period.toFixed(1)+' min':'—';
+$('satInclination').textContent=Number.isFinite(best.inclination)?best.inclination.toFixed(1)+'°':'—';
+$('satMag').textContent=best.sunlit?(best.mag.toFixed(1)+' est.'):'shadow';
+$('satLight').textContent=best.sunlit?'Sunlit':'Earth shadow';
+$('satRole').textContent=satelliteRole(best);
+$('satService').textContent=serviceYear(best);
+$('satEpochAge').textContent=epochAgeText(best);
+$('satSheet').style.display='block'}
+async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();}
 window.addEventListener('deviceorientation',e=>{const h=typeof e.webkitCompassHeading==='number'?e.webkitCompassHeading:(e.alpha==null?state.heading:360-e.alpha);state.heading=norm(h)});
-canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.lastX=e.clientX;state.startY=state.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{if(!state.drag||state.compass)return;const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;state.lastX=e.clientX;state.lastY=e.clientY;if(state.fov>=180){state.rot+=dx*.35}else{const scale=state.fov/Math.min(canvas.clientWidth,canvas.clientHeight*.9);state.centerAz=norm(state.centerAz-dx*scale);state.centerEl=Math.max(2,Math.min(90,state.centerEl+dy*scale))}});canvas.addEventListener('pointerup',e=>{const moved=Math.hypot(e.clientX-state.startX,e.clientY-state.startY);state.drag=false;if(moved<7)satClick(e)});
+canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.lastX=e.clientX;state.startY=state.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{
+  if(!state.drag)return;
+  const dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
+  state.lastX=e.clientX;state.lastY=e.clientY;
+  if(state.fov>=180){
+    if(!state.compass)state.rot+=dx*.35;
+  }else{
+    const scale=state.fov/Math.min(canvas.clientWidth,canvas.clientHeight*.9);
+    if(!state.compass)state.centerAz=norm(state.centerAz-dx*scale);
+    state.centerEl=Math.max(2,Math.min(90,state.centerEl+dy*scale));
+  }
+});canvas.addEventListener('pointerup',e=>{const moved=Math.hypot(e.clientX-state.startX,e.clientY-state.startY);state.drag=false;if(moved<7)satClick(e)});
 $('timeline').addEventListener('input',e=>{state.offset=+e.target.value;$('liveButton').classList.toggle('active',state.offset===0);$('timeLabel').textContent=state.offset===0?'Now':(state.offset>0?'+'+state.offset+' min':state.offset+' min');$('localTimeLabel').textContent=viewTime().toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'});requestPositions(true)});
 $('liveButton').onclick=()=>{$('timeline').value=0;state.offset=0;$('liveButton').classList.add('active');$('timeLabel').textContent='Now';$('localTimeLabel').textContent='Live sky';requestPositions(true)};
 function setFov(v){state.fov=+v;document.querySelectorAll('.fov-chip').forEach(b=>b.classList.toggle('on',+b.dataset.fov===state.fov));if(state.fov>=180){$('orientationPill').textContent=state.compass?'compass aligned':'N • zenith';$('fovHint').textContent='All-sky zenith view. Choose a tighter field, then drag to pan across the sky.'}else{$('orientationPill').textContent=state.fov+'° field';$('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.'}}
 document.querySelectorAll('.fov-chip').forEach(b=>b.onclick=()=>setFov(+b.dataset.fov));
 document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const l=b.dataset.layer;state.layers[l]=!state.layers[l];b.classList.toggle('on',state.layers[l]);requestPositions(true);requestPasses(true)});
-$('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=Math.max(5,Math.min(90,state.selected.el));if(state.fov>=180)setFov(30);$('satSheet').style.display='none'};
-$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');$('orientationPill').textContent=state.fov>=180?'N • zenith':state.fov+'° field'}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
+$('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=Math.max(5,Math.min(90,state.selected.el));if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
+$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
 function toggle(id,key){$(id).onclick=()=>{state[key]=!state[key];$(id).classList.toggle('on',state[key])}}toggle('constToggle','constellations');toggle('milkyToggle','milky');toggle('labelsToggle','labels');toggle('brightnessToggle','brightness');toggle('stationAlert','stationAlert');toggle('trainAlert','trainAlert');
 $('notifyButton').onclick=async()=>{if(!('Notification'in window)){return $('alertStatus').textContent='Notifications API is unavailable in this browser.'}const p=await Notification.requestPermission();$('alertStatus').textContent=p==='granted'?'Notifications enabled. StarWatcher can alert you while the PWA is active.':'Notification permission was not granted.'};
 $('refreshData').onclick=()=>loadCatalogue(true);
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav button').forEach(n=>n.classList.remove('active'));$(b.dataset.page+'Page').classList.add('active');b.classList.add('active')});
 try{const l=JSON.parse(safeGet('sw3_loc'));if(l)setLocation(l.lat,l.lon,l.name)}catch(e){}
+
+let skyFullscreen=false;
+$('fullscreenSky').onclick=async()=>{
+  skyFullscreen=!skyFullscreen;
+  const card=document.querySelector('.sky-card');
+  card.classList.toggle('sky-fullscreen',skyFullscreen);
+  $('fullscreenSky').textContent=skyFullscreen?'×':'⛶';
+  document.body.style.overflow=skyFullscreen?'hidden':'';
+  setTimeout(resize,60);
+  if(skyFullscreen && document.documentElement.requestFullscreen){
+    try{await document.documentElement.requestFullscreen()}catch(e){}
+  }else if(!skyFullscreen && document.fullscreenElement && document.exitFullscreen){
+    try{await document.exitFullscreen()}catch(e){}
+  }
+};
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement && skyFullscreen){
+    skyFullscreen=false;
+    document.querySelector('.sky-card').classList.remove('sky-fullscreen');
+    $('fullscreenSky').textContent='⛶';
+    document.body.style.overflow='';
+    setTimeout(resize,60);
+  }
+});
+
 window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

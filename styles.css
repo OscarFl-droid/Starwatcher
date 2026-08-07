@@ -18,3 +18,22 @@ input[type=range]{width:100%;accent-color:var(--cyan);margin:13px 0 4px}.ticks{d
 .fov-chip{border:1px solid #263452;background:#090f1f;color:#8492b1;border-radius:13px;padding:9px 5px;font-size:10px;font-weight:800}
 .fov-chip.on{background:#11263a;color:#76eaff;border-color:#2e6b7d;box-shadow:0 0 0 1px #62e3ff18 inset}
 .fov-hint{margin-top:9px;color:#7887a8;font-size:10px;line-height:1.35}
+
+.fullscreen-button{
+  position:absolute;z-index:7;right:12px;top:54px;width:38px;height:38px;border-radius:12px;
+  border:1px solid #2f4268;background:#07101edc;color:#d8e6ff;font-size:20px;font-weight:700;
+  backdrop-filter:blur(10px)
+}
+.sky-card.sky-fullscreen{
+  position:fixed;z-index:100;inset:0;width:100vw;height:100dvh;min-height:0;border-radius:0;border:0;
+  background:#020510
+}
+.sky-card.sky-fullscreen .sky-top{top:calc(12px + env(safe-area-inset-top))}
+.sky-card.sky-fullscreen .fullscreen-button{top:calc(54px + env(safe-area-inset-top))}
+.sky-card.sky-fullscreen .status{bottom:calc(12px + env(safe-area-inset-bottom))}
+.sky-card.sky-fullscreen canvas{width:100%;height:100%}
+.status.hidden{opacity:0;pointer-events:none;transform:translateY(10px)}
+.status{transition:opacity .28s ease,transform .28s ease}
+.sat-grid{grid-template-columns:1fr 1fr}
+.sat-grid span{min-width:0}
+.sat-grid b{display:block;margin-top:2px;font-size:12px;line-height:1.25}
