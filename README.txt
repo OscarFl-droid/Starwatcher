@@ -1,17 +1,9 @@
-STARLINK SKY
-============
+STARWATCHER — SMARTPHONE BUILD
 
-Open index.html in a modern browser, or upload the starlink-sky folder to GitHub Pages.
+Replace the existing repository root files with index.html and README.txt.
 
-Features
-- Village, town or postcode lookup, with a fallback geocoder
-- Browser geolocation when served over HTTPS
-- Zenith-centred local sky with bright stars and constellation guides
-- Live Starlink propagation from current CelesTrak GP/TLE data
-- Cached orbital data when a later request temporarily fails
-- Clickable satellites and touch/mouse sky rotation
+GitHub Pages:
+Branch: main
+Folder: / (root)
 
-Requirements
-- Internet access is required for current orbital elements and place search.
-- Precise browser geolocation generally requires HTTPS; GitHub Pages provides HTTPS.
-- Satellite positions are calculated from public orbital elements and are approximate.
+This build is smartphone-first and uses CelesTrak OMM/JSON rather than legacy TLE parsing. It caches orbital data for two hours, uses browser geolocation or place search, and calculates Starlink positions and high passes locally.
