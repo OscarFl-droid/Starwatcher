@@ -1,13 +1,12 @@
-# StarWatcher v4.2 cache-safe repair
+# StarWatcher v4.4
 
-Fixes the partially deployed v4.1 state:
-- focused compass heading is the actual field centre;
-- bearing label updates live;
-- fullscreen button is present and null-safe;
-- successful engine-ready banner fades away;
-- core files are explicitly versioned;
-- service worker is network-first to prevent stale mixed-version HTML/JS;
-- existing 1-second SGP4 worker updates and ~60-fps interpolation are retained;
-- rich satellite telemetry is retained.
+Changes:
+- Fullscreen/re-zero controls are grouped in a vertically centered action stack at the top-right of the sky view.
+- New ◎ Re-zero button.
+- In compass mode, Re-zero locks the focused view centre to the phone's current compass heading.
+- Without compass mode, Re-zero resets to due south.
+- Elevation centre resets to 57°, matching the current focused-view geometry.
+- Core assets bumped to v44 to force clean deployment/cache refresh.
+- Existing v4.3 location and alert behaviour is retained.
 
-Upload this overlay over the existing repository. Do not replace data/catalogue.json.
+Upload as an overlay. Keep data/catalogue.json unchanged.

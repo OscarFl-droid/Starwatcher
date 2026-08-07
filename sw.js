@@ -1,5 +1,5 @@
-const CACHE='starwatcher-v4-2';
-const CORE=['./','./index.html','./styles.css?v=42','./app.js?v=42','./orbit-worker.js?v=42','./manifest.webmanifest'];
+const CACHE='starwatcher-v4-4';
+const CORE=['./','./index.html','./styles.css?v=44','./app.js?v=44','./orbit-worker.js?v=44','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();

@@ -19,17 +19,13 @@ input[type=range]{width:100%;accent-color:var(--cyan);margin:13px 0 4px}.ticks{d
 .fov-chip.on{background:#11263a;color:#76eaff;border-color:#2e6b7d;box-shadow:0 0 0 1px #62e3ff18 inset}
 .fov-hint{margin-top:9px;color:#7887a8;font-size:10px;line-height:1.35}
 
-.fullscreen-button{
-  position:absolute;z-index:7;right:12px;top:54px;width:38px;height:38px;border-radius:12px;
-  border:1px solid #2f4268;background:#07101edc;color:#d8e6ff;font-size:20px;font-weight:700;
-  backdrop-filter:blur(10px)
-}
+
 .sky-card.sky-fullscreen{
   position:fixed;z-index:100;inset:0;width:100vw;height:100dvh;min-height:0;border-radius:0;border:0;
   background:#020510
 }
 .sky-card.sky-fullscreen .sky-top{top:calc(12px + env(safe-area-inset-top))}
-.sky-card.sky-fullscreen .fullscreen-button{top:calc(54px + env(safe-area-inset-top))}
+.sky-card.sky-fullscreen 
 .sky-card.sky-fullscreen .status{bottom:calc(12px + env(safe-area-inset-bottom))}
 .sky-card.sky-fullscreen canvas{width:100%;height:100%}
 .status.hidden{opacity:0!important;visibility:hidden;pointer-events:none;transform:translateY(10px)}
@@ -37,3 +33,31 @@ input[type=range]{width:100%;accent-color:var(--cyan);margin:13px 0 4px}.ticks{d
 .sat-grid{grid-template-columns:1fr 1fr}
 .sat-grid span{min-width:0}
 .sat-grid b{display:block;margin-top:2px;font-size:12px;line-height:1.25}
+
+.location-results{display:none;margin-top:8px;border:1px solid #243250;border-radius:15px;overflow:hidden;background:#060b17}
+.location-results.show{display:block}
+.location-choice{display:block;width:100%;text-align:left;border:0;border-top:1px solid #1b2741;background:#08101f;color:#eef3ff;padding:11px 12px}
+.location-choice:first-child{border-top:0}
+.location-choice b{display:block;font-size:13px}
+.location-choice span{display:block;color:#8998b8;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.location.applied{border-color:#2f7459;box-shadow:0 0 0 1px #70efae22 inset}
+.location.applied:after{content:"✓ Location applied";display:block;margin-top:6px;color:#78f0b0;font-size:10px;font-weight:800;letter-spacing:.04em}
+.alert-banner{display:none;position:fixed;z-index:70;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));width:min(calc(100% - 24px),536px);background:#0b1c25f7;border:1px solid #2f6571;border-radius:18px;padding:12px 46px 12px 14px;box-shadow:0 18px 55px #000c;backdrop-filter:blur(18px)}
+.alert-banner.show{display:block;animation:alertIn .22s ease-out}
+.alert-banner b{display:block;color:#8ff4ff;font-size:13px}.alert-banner span{display:block;color:#d1daec;font-size:11px;margin-top:3px;line-height:1.35}
+.alert-banner button{position:absolute;right:8px;top:7px;width:34px;height:34px;border:0;border-radius:11px;background:#13263a;color:#fff;font-size:21px}
+@keyframes alertIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+.sky-actions{
+  position:absolute;z-index:8;right:12px;top:54px;display:flex;flex-direction:column;gap:8px;
+  align-items:center;justify-content:center
+}
+.sky-action-button{
+  width:42px;height:42px;display:grid;place-items:center;padding:0;
+  border-radius:13px;border:1px solid #2f4268;background:#07101edc;color:#d8e6ff;
+  font-size:20px;font-weight:700;line-height:1;backdrop-filter:blur(10px)
+}
+.sky-action-button:active{transform:scale(.96)}
+.sky-card.sky-fullscreen .sky-actions{
+  top:calc(54px + env(safe-area-inset-top));right:14px
+}

@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StarWatcher">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=42">
+<link rel="stylesheet" href="./styles.css?v=44">
 <title>StarWatcher</title>
 </head>
 <body>
@@ -29,7 +29,7 @@
           <span class="pill" id="orientationPill">N • zenith</span>
           <span class="pill" id="utc">UTC --:--:--</span>
         </div>
-        <button id="fullscreenSky" class="fullscreen-button" aria-label="Toggle fullscreen sky">⛶</button>
+        <div class="sky-actions"><button id="rezeroSky" class="sky-action-button" aria-label="Re-zero sky view">◎</button><button id="fullscreenSky" class="sky-action-button" aria-label="Toggle fullscreen sky">⛶</button></div>
         <div id="status" class="status">
           <b>Loading orbital catalogue…</b>
           <span>Preparing live satellite layers</span>
@@ -72,6 +72,7 @@
           <input id="place" placeholder="Village, town or postcode" autocomplete="off">
           <button id="find" class="primary">Find</button>
         </div>
+        <div id="locationResults" class="location-results"></div>
         <button id="geo" class="secondary">⌖ Use my precise location</button>
         <div class="location">
           <b id="locname">Vernouillet, France</b>
@@ -100,8 +101,8 @@
     <section id="alertsPage" class="page">
       <div class="card page-card">
         <h2>Alerts</h2>
-        <p>Foreground pass alerts work immediately. iPhone background push requires StarWatcher to be installed to the Home Screen and a push service.</p>
-        <button id="notifyButton" class="secondary">Enable pass notifications</button>
+        <p>In-app pass alerts work while StarWatcher is open in Safari. Home Screen installations can additionally use iOS system notifications when supported.</p>
+        <button id="notifyButton" class="secondary">Arm pass alerts</button>
         <div class="setting">
           <div><b>ISS / station alert</b><span>Alert when a bright station pass is within 10 minutes.</span></div>
           <button id="stationAlert" class="toggle on"></button>
@@ -114,7 +115,7 @@
           <div><b>Brightness estimates</b><span>Photometric estimates use range and solar phase geometry; attitude-dependent glints remain uncertain.</span></div>
           <button id="brightnessToggle" class="toggle on"></button>
         </div>
-        <div id="alertStatus" class="info-box">No alert has fired in this session.</div>
+        <div id="alertStatus" class="info-box">In-app alerts are ready. Tap “Arm pass alerts” to test notification support and confirm alerts are active.</div>
       </div>
     </section>
 
@@ -166,6 +167,11 @@
 </div>
 
 
+<div id="alertBanner" class="alert-banner">
+  <div><b id="alertBannerTitle">Satellite alert</b><span id="alertBannerBody"></span></div>
+  <button id="dismissAlert">×</button>
+</div>
+
 <nav class="nav">
   <button data-page="sky" class="active">◉<span>Sky</span></button>
   <button data-page="passes">⌁<span>Passes</span></button>
@@ -173,6 +179,6 @@
   <button data-page="settings">⚙︎<span>View</span></button>
 </nav>
 
-<script src="./app.js?v=42"></script>
+<script src="./app.js?v=44"></script>
 </body>
 </html>

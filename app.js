@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),R=Math.PI/180,D=180/Math.PI,norm=x=>(x%360+360)%360;
-const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,catalogueMeta:null,fov:180,centerAz:180,centerEl:55,transitionStart:0,transitionDuration:1000};
-const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=42');
+const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,alertsArmed:true,latestPasses:[],catalogueMeta:null,fov:180,centerAz:180,centerEl:55,transitionStart:0,transitionDuration:1000};
+const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=44');
 const stars={
  Polaris:[37.95,89.26,1.98],Dubhe:[165.93,61.75,1.79],Merak:[165.46,56.38,2.37],Phecda:[178.46,53.69,2.44],Megrez:[183.86,57.03,3.31],Alioth:[193.51,55.96,1.76],Mizar:[200.98,54.93,2.23],Alkaid:[206.89,49.31,1.85],
  Caph:[2.29,59.15,2.28],Schedar:[10.13,56.54,2.24],Navi:[14.18,60.72,2.15],Ruchbah:[21.45,60.24,2.68],Segin:[28.60,63.67,3.35],
@@ -69,13 +69,96 @@ function updateOrientationPill(){
     $('orientationPill').textContent=cardinal(az)+' '+Math.round(az)+'° • '+state.fov+'°';
   }
 }
-function renderPasses(passes){const list=$('passList');list.innerHTML='';if(!passes.length){list.innerHTML='<div class="empty">No sunlit passes brighter than magnitude 5 are predicted in the next six hours.</div>';$('nextTime').textContent='None soon';$('nextDesc').textContent='';return}for(const p of passes.slice(0,15)){const t=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),d=document.createElement('div');d.className='pass-item';d.innerHTML='<div><b>'+p.name+'</b><span>'+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • peak '+Math.round(p.max)+'° • est. mag '+p.minMag.toFixed(1)+'</span></div><strong>'+t+'</strong>';list.appendChild(d)}const p=passes[0];$('nextTime').textContent=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('nextDesc').textContent=p.name+' • '+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • mag '+p.minMag.toFixed(1)}
+function renderPasses(passes){
+  state.latestPasses=passes||[];
+  const list=$('passList');list.innerHTML='';
+  if(!passes.length){
+    list.innerHTML='<div class="empty">No sunlit passes brighter than magnitude 5 are predicted in the next six hours.</div>';
+    $('nextTime').textContent='None soon';$('nextDesc').textContent='';
+    evaluatePassAlerts([]);
+    return;
+  }
+  for(const p of passes.slice(0,15)){
+    const t=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const d=document.createElement('div');d.className='pass-item';
+    d.innerHTML='<div><b>'+p.name+'</b><span>'+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • peak '+Math.round(p.max)+'° • est. mag '+p.minMag.toFixed(1)+'</span></div><strong>'+t+'</strong>';
+    list.appendChild(d);
+  }
+  const p=passes[0];
+  $('nextTime').textContent=new Date(Date.now()+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  $('nextDesc').textContent=p.name+' • '+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • mag '+p.minMag.toFixed(1);
+  evaluatePassAlerts(passes);
+}
+function evaluatePassAlerts(passes){
+  if(!state.alertsArmed)return;
+  if(state.stationAlert){
+    const p=passes.find(x=>x.layer==='station'&&x.start>=0&&x.start<=10&&x.minMag<=3);
+    if(p){
+      const bucket=Math.floor((Date.now()+p.start*60000)/600000);
+      const key='station-upcoming-'+p.id+'-'+bucket;
+      if(!state.notified.has(key)){
+        state.notified.add(key);
+        fireAlert(p.name+' pass in '+Math.max(1,Math.round(p.start))+' min',
+          'Look '+cardinal(p.startAz)+' → '+cardinal(p.endAz)+' • peak '+Math.round(p.max)+'° • estimated mag '+p.minMag.toFixed(1));
+      }
+    }
+  }
+}
 function checkAlerts(arr){if(state.offset!==0)return;const now=Date.now();if(state.stationAlert){for(const s of arr.filter(x=>x.layer==='station'&&x.sunlit&&x.el>10&&x.mag<2)){const key='station-'+s.id+'-'+new Date().toDateString();if(!state.notified.has(key)){state.notified.add(key);fireAlert(s.name+' is visible now',Math.round(s.el)+'° high toward '+cardinal(s.az)+' • estimated mag '+s.mag.toFixed(1))}}}
  if(state.trainAlert){const sl=arr.filter(x=>x.layer==='starlink'&&x.sunlit&&x.el>10&&x.mag<5);let best=[];for(const a of sl){const group=sl.filter(b=>Math.abs(b.el-a.el)<7&&Math.abs((((b.az-a.az)+540)%360)-180)<10);if(group.length>best.length)best=group}if(best.length>=5){const key='train-'+Math.floor(now/1800000);if(!state.notified.has(key)){state.notified.add(key);fireAlert('Possible Starlink train visible',best.length+' sunlit Starlinks clustered near '+cardinal(best[0].az))}}}
 }
-function fireAlert(title,body){$('alertStatus').textContent=title+' — '+body;if(Notification.permission==='granted'&&navigator.serviceWorker){navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,icon:'./icons/icon-192.svg',tag:title}))}}
-function setLocation(lat,lon,name){state.lat=lat;state.lon=lon;state.name=name;$('locname').textContent=name;$('coords').textContent=Math.abs(lat).toFixed(4)+'° '+(lat>=0?'N':'S')+' · '+Math.abs(lon).toFixed(4)+'° '+(lon>=0?'E':'W');safeSet('sw3_loc',JSON.stringify({lat,lon,name}));requestPositions(true);requestPasses(true)}
-async function findPlace(){const q=$('place').value.trim();if(!q)return;try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(q),{headers:{'Accept-Language':navigator.language||'en'}}),a=await r.json();if(!a[0])throw new Error('Place not found');setLocation(+a[0].lat,+a[0].lon,a[0].display_name)}catch(e){status('Location search failed',e.message,'warn')}}
+let alertHideTimer=null;
+function fireAlert(title,body){
+  $('alertStatus').textContent=title+' — '+body;
+  $('alertBannerTitle').textContent=title;
+  $('alertBannerBody').textContent=body;
+  $('alertBanner').classList.add('show');
+  if(alertHideTimer)clearTimeout(alertHideTimer);
+  alertHideTimer=setTimeout(()=>$('alertBanner').classList.remove('show'),12000);
+  if(navigator.vibrate)try{navigator.vibrate([120,80,120])}catch(e){}
+  if('Notification'in window && Notification.permission==='granted' && navigator.serviceWorker){
+    navigator.serviceWorker.ready.then(r=>r.showNotification(title,{body,icon:'./icons/icon-192.svg',tag:title})).catch(()=>{});
+  }
+}
+function setLocation(lat,lon,name){
+  state.lat=lat;state.lon=lon;state.name=name;
+  $('locname').textContent=name;
+  $('coords').textContent=Math.abs(lat).toFixed(4)+'° '+(lat>=0?'N':'S')+' · '+Math.abs(lon).toFixed(4)+'° '+(lon>=0?'E':'W');
+  const card=document.querySelector('.location');
+  card.classList.remove('applied');void card.offsetWidth;card.classList.add('applied');
+  $('locationResults').classList.remove('show');
+  $('locationResults').innerHTML='';
+  safeSet('sw3_loc',JSON.stringify({lat,lon,name}));
+  state.lastPasses=0;
+  requestPositions(true);
+  requestPasses(true);
+  $('alertStatus').textContent='Location updated to '+name+'. Pass alerts and predictions have been recalculated.';
+}
+async function findPlace(){
+  const q=$('place').value.trim();
+  if(!q)return;
+  const box=$('locationResults');
+  box.innerHTML='<button class="location-choice"><b>Searching…</b><span>'+q+'</span></button>';
+  box.classList.add('show');
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q='+encodeURIComponent(q),{headers:{'Accept-Language':navigator.language||'en'}});
+    const a=await r.json();
+    if(!Array.isArray(a)||!a.length)throw new Error('Place not found');
+    box.innerHTML='';
+    a.forEach(item=>{
+      const b=document.createElement('button');
+      b.className='location-choice';
+      const title=(item.name||item.display_name.split(',')[0]||q);
+      b.innerHTML='<b>'+title.replace(/[<>&]/g,'')+'</b><span>'+item.display_name.replace(/[<>&]/g,'')+'</span>';
+      b.onclick=()=>setLocation(+item.lat,+item.lon,item.display_name);
+      box.appendChild(b);
+    });
+    box.classList.add('show');
+  }catch(e){
+    box.innerHTML='<button class="location-choice"><b>Location search failed</b><span>'+e.message+'</span></button>';
+    box.classList.add('show');
+  }
+}
 function geolocate(){navigator.geolocation.getCurrentPosition(p=>setLocation(p.coords.latitude,p.coords.longitude,'Current location'),e=>status('Location unavailable','Allow precise location or type a place.','warn'),{enableHighAccuracy:true,timeout:12000,maximumAge:180000})}
 function satelliteRole(s){
   if(s.layer==='starlink')return 'Broadband communications';
@@ -152,12 +235,59 @@ document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const l=b.dataset.l
 $('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=Math.max(5,Math.min(90,state.selected.el));if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
 $('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° field. Drag to pan in azimuth and elevation; tap a satellite to inspect it.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
 function toggle(id,key){$(id).onclick=()=>{state[key]=!state[key];$(id).classList.toggle('on',state[key])}}toggle('constToggle','constellations');toggle('milkyToggle','milky');toggle('labelsToggle','labels');toggle('brightnessToggle','brightness');toggle('stationAlert','stationAlert');toggle('trainAlert','trainAlert');
-$('notifyButton').onclick=async()=>{if(!('Notification'in window)){return $('alertStatus').textContent='Notifications API is unavailable in this browser.'}const p=await Notification.requestPermission();$('alertStatus').textContent=p==='granted'?'Notifications enabled. StarWatcher can alert you while the PWA is active.':'Notification permission was not granted.'};
+$('notifyButton').onclick=async()=>{
+  state.alertsArmed=true;
+  $('notifyButton').textContent='Alerts armed ✓';
+  if(!('Notification'in window)){
+    $('alertStatus').textContent='In-app alerts are armed. This Safari view does not expose iOS system notifications; alerts will appear inside StarWatcher while it is open.';
+    fireAlert('StarWatcher alerts armed','In-app alerts will appear here while StarWatcher is open.');
+    return;
+  }
+  try{
+    const p=await Notification.requestPermission();
+    if(p==='granted'){
+      $('alertStatus').textContent='In-app alerts and iOS notifications are enabled.';
+      fireAlert('StarWatcher alerts armed','ISS/station and Starlink train alerts are active.');
+    }else{
+      $('alertStatus').textContent='In-app alerts are armed. iOS system notification permission was not granted.';
+      fireAlert('In-app alerts armed','StarWatcher will alert you while this page is open.');
+    }
+  }catch(e){
+    $('alertStatus').textContent='In-app alerts are armed. System notifications are unavailable in this browser mode.';
+    fireAlert('In-app alerts armed','StarWatcher will alert you while this page is open.');
+  }
+};
+$('dismissAlert').onclick=()=>{$('alertBanner').classList.remove('show')};
 $('refreshData').onclick=()=>loadCatalogue(true);
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav button').forEach(n=>n.classList.remove('active'));$(b.dataset.page+'Page').classList.add('active');b.classList.add('active')});
 try{const l=JSON.parse(safeGet('sw3_loc'));if(l)setLocation(l.lat,l.lon,l.name)}catch(e){}
 
+
+function rezeroView(){
+  if(state.compass){
+    state.centerAz=norm(state.heading);
+  }else{
+    state.centerAz=180;
+    state.rot=0;
+  }
+  state.centerEl=57;
+  updateOrientationPill();
+  if(state.fov<180){
+    $('fovHint').textContent=state.compass
+      ? 'Re-zeroed to current compass heading at 57° elevation.'
+      : 'Re-zeroed to south at 57° elevation. Drag to pan or enable compass alignment.';
+  }
+  const b=$('rezeroSky');
+  if(b){
+    const old=b.textContent;
+    b.textContent='✓';
+    setTimeout(()=>b.textContent=old,700);
+  }
+}
+
 let skyFullscreen=false;
+const rezeroButton=$('rezeroSky');
+if(rezeroButton)rezeroButton.onclick=rezeroView;
 const fullscreenButton=$('fullscreenSky');
 if(fullscreenButton){
   fullscreenButton.onclick=async()=>{
@@ -184,4 +314,4 @@ document.addEventListener('fullscreenchange',()=>{
   }
 });
 
-window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=42').catch(()=>{}));
+window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=44').catch(()=>{}));
