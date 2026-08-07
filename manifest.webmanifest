@@ -1,0 +1,24 @@
+{
+  "id": "./",
+  "name": "StarWatcher",
+  "short_name": "StarWatcher",
+  "description": "Real-time smartphone satellite sky tracker with selectable 15\u00b0\u2013180\u00b0 field of view.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#030611",
+  "theme_color": "#030611",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
