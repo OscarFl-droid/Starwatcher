@@ -1,27 +1,21 @@
-# StarWatcher v3 — Real-time phone sky tracker
+# StarWatcher v4 — Focused real-time sky tracker
 
-This is a full replacement for v2.
+This update removes camera/AR mode and replaces it with a true angular field-of-view system.
 
-## Upload
-Replace the repository contents with everything in this package, preserving:
-`.github/workflows/update-starlink.yml`
+## Field of view
+Select **15°, 30°, 60°, 90°, or All sky**. In focused modes, drag horizontally to pan in azimuth and vertically to pan in elevation. Tap a satellite, then choose **Center focused view here** to put it at the centre of the narrow field.
 
-GitHub Pages remains `main` + `/ (root)`.
+## Real-time architecture
+- GitHub Actions catalogue refresh: automatically every **2 hours**.
+- SGP4 orbital solutions: calculated off the UI thread in `orbit-worker.js` every **1 second**.
+- Screen rendering: `requestAnimationFrame`, normally approximately **60 fps** on modern smartphones.
+- Satellite motion: each new one-second orbital solution becomes an interpolation target; dots move continuously between solutions rather than jumping.
+- The main UI thread never performs the bulk constellation propagation.
 
-## One-time update after upload
-Because v3 now combines Starlink + OneWeb + ISS + Tiangong + Hubble, run:
-Actions → **Update orbital catalogue** → Run workflow.
+## Upgrade from v3
+This package is intended as an **overlay update**. Keep your existing populated `data/catalogue.json` and existing `.github/workflows/update-starlink.yml`; both already provide the data architecture required by v4. Replace the app files from the overlay package.
 
-The same workflow then refreshes automatically every two hours.
+The workflow must retain the two-hour schedule:
+`cron: "17 */2 * * *"`
 
-## Real-time rendering
-Orbital propagation runs in `orbit-worker.js`, away from the UI thread. The visible positions are continuously interpolated by `requestAnimationFrame`, giving smooth 60-fps visual motion while fresh SGP4 positions are calculated several times per second.
-
-## AR mode
-AR uses the rear camera plus DeviceOrientation / iOS compass heading. On iPhone, sensor and camera permissions must be granted from direct button taps. Compass accuracy depends on magnetic calibration and nearby metal/electronics.
-
-## Brightness
-Displayed magnitudes are *estimates*, not precision photometry. They use spacecraft-class baseline brightness, range and a Lambertian solar phase function. True brightness can change substantially with spacecraft attitude, panel orientation, atmosphere and observer conditions. “Train” detection identifies dense sunlit Starlink clusters; it is not a claim that every member will be naked-eye visible.
-
-## Notifications
-This build can issue foreground/local PWA notifications when it is running. Reliable alerts while the iPhone app is completely closed require standards-based Web Push plus a server-side push subscription/scheduler. iOS supports Web Push for Home Screen web apps, but GitHub Pages alone cannot originate scheduled push messages.
+After deployment, Safari may briefly show the older cached PWA. Reload the page once or twice, or close and reopen the Home Screen app; v4 uses a new service-worker cache version.

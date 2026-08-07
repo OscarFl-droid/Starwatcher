@@ -2,7 +2,7 @@
   "id": "./",
   "name": "StarWatcher",
   "short_name": "StarWatcher",
-  "description": "Real-time smartphone satellite sky tracker.",
+  "description": "Real-time smartphone satellite sky tracker with selectable 15\u00b0\u2013180\u00b0 field of view.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

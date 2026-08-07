@@ -29,8 +29,7 @@
           <span class="pill" id="orientationPill">N • zenith</span>
           <span class="pill" id="utc">UTC --:--:--</span>
         </div>
-        <button id="arButton" class="ar-button">◎ AR SKY</button>
-        <div id="status" class="status">
+<div id="status" class="status">
           <b>Loading orbital catalogue…</b>
           <span>Preparing live satellite layers</span>
         </div>
@@ -43,6 +42,18 @@
         </div>
         <input id="timeline" type="range" min="-10" max="360" step="1" value="0">
         <div class="ticks"><span>−10m</span><span>Now</span><span>+1h</span><span>+3h</span><span>+6h</span></div>
+      </div>
+
+      <div class="fov card">
+        <div class="section-title">FIELD OF VIEW</div>
+        <div class="fov-row">
+          <button class="fov-chip" data-fov="15">15°</button>
+          <button class="fov-chip" data-fov="30">30°</button>
+          <button class="fov-chip" data-fov="60">60°</button>
+          <button class="fov-chip" data-fov="90">90°</button>
+          <button class="fov-chip on" data-fov="180">All sky</button>
+        </div>
+        <div class="fov-hint" id="fovHint">All-sky zenith view. Choose a tighter field, then drag to pan across the sky.</div>
       </div>
 
       <div class="layers card">
@@ -144,20 +155,9 @@
     <span>Brightness <b id="satMag">—</b></span>
     <span>Lighting <b id="satLight">—</b></span>
   </div>
-  <button id="trackInAR" class="primary full">Track in AR</button>
+  <button id="centerSelected" class="primary full">Center focused view here</button>
 </div>
 
-<div id="arView" class="ar-view">
-  <video id="camera" playsinline muted></video>
-  <canvas id="arCanvas"></canvas>
-  <div class="ar-hud">
-    <button id="closeAR">×</button>
-    <div><b>AR SKY</b><span id="arHeading">Compass —</span></div>
-    <button id="calibrateAR">◎</button>
-  </div>
-  <div id="guidance" class="guidance">Point your phone at the sky</div>
-  <div class="crosshair"><i></i><i></i></div>
-</div>
 
 <nav class="nav">
   <button data-page="sky" class="active">◉<span>Sky</span></button>
