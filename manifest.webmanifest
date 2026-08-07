@@ -1,25 +1,24 @@
 {
+  "id": "./",
   "name": "StarWatcher",
   "short_name": "StarWatcher",
-  "description": "Smartphone-first live Starlink sky viewer.",
+  "description": "Real-time smartphone satellite sky tracker.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#050814",
-  "theme_color": "#050814",
+  "background_color": "#030611",
+  "theme_color": "#030611",
   "orientation": "portrait",
   "icons": [
     {
       "src": "./icons/icon-192.svg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/svg+xml"
     },
     {
       "src": "./icons/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/svg+xml"
     }
   ]
 }

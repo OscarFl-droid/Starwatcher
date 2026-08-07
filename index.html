@@ -3,205 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#050814">
+<meta name="theme-color" content="#030611">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StarWatcher">
 <link rel="manifest" href="./manifest.webmanifest">
+<link rel="stylesheet" href="./styles.css">
 <title>StarWatcher</title>
-<style>
-:root{
- --bg:#050814;--panel:#0b1122;--line:#24304f;--text:#f7f8ff;--muted:#9ba8c6;
- --cyan:#65e7ff;--green:#77efad;--gold:#ffd26d;--red:#ff8fa6;--nav:68px;
- --safe-t:env(safe-area-inset-top);--safe-b:env(safe-area-inset-bottom)
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
-body{min-height:100dvh;overflow-x:hidden}
-button,input{font:inherit}
-button{cursor:pointer}
-.app{width:min(100%,560px);min-height:100dvh;margin:auto;padding:calc(12px + var(--safe-t)) 14px calc(var(--nav) + 22px + var(--safe-b))}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:0 0 10px}
-h1{font-size:31px;line-height:1;margin:0;letter-spacing:-.05em}
-.subtitle{margin:7px 0 0;color:var(--muted);font-size:13px}
-.live{font-size:11px;letter-spacing:.14em;color:var(--green);font-weight:800;display:flex;gap:7px;align-items:center;padding-top:4px}
-.live i{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 14px var(--green)}
-.card{background:linear-gradient(180deg,#0d1428ee,#080d1dee);border:1px solid var(--line);border-radius:24px;box-shadow:0 14px 42px #0007}
-.skycard{height:min(60dvh,610px);min-height:430px;position:relative;overflow:hidden}
-canvas{width:100%;height:100%;display:block;touch-action:none}
-.skybar{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none}
-.pill{font-size:11px;color:#c8d1e8;background:#060a17cc;border:1px solid #2a3657;border-radius:999px;padding:8px 10px;backdrop-filter:blur(10px)}
-.overlay{position:absolute;left:12px;right:12px;bottom:12px;background:#080d1ee8;border:1px solid #2b3859;border-radius:18px;padding:12px 14px;backdrop-filter:blur(15px)}
-.overlay strong{font-size:13px;display:block}.overlay span{font-size:11px;color:var(--muted);display:block;margin-top:3px}
-.overlay.warn{border-color:#6a4652;background:#2b121be8}.overlay.warn strong{color:#ffb0c0}
-.controls{margin-top:12px;padding:14px}
-.row{display:flex;gap:8px}
-input{min-width:0;flex:1;background:#060b18;color:var(--text);border:1px solid var(--line);border-radius:15px;padding:13px 14px;outline:none}
-.btn{border:0;border-radius:15px;padding:12px 14px;background:var(--cyan);color:#041017;font-weight:800}
-.btn.secondary{width:100%;margin-top:8px;background:#151f3a;color:#fff;border:1px solid var(--line)}
-.location{margin-top:12px;padding:12px 13px;background:#070c19;border:1px solid #1c2744;border-radius:16px}
-.location b{display:block;font-size:16px}.location span{font-size:11px;color:var(--muted)}
-.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.metric{background:#070c19;border:1px solid #1d2845;border-radius:16px;padding:11px}
-.metric strong{font-size:22px;display:block;letter-spacing:-.04em}.metric span{font-size:10px;color:var(--muted)}
-.next{margin-top:12px;padding:12px;background:#0a1327;border:1px solid #243354;border-radius:17px}
-.nexthead{display:flex;justify-content:space-between;gap:8px}.nexthead span{font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:800}
-.nextmain{display:flex;justify-content:space-between;align-items:flex-end;margin-top:5px;gap:10px}.nextmain strong{font-size:22px}.nextmain b{font-size:13px;color:var(--cyan);text-align:right}
-.note{font-size:10px;color:#7482a5;margin-top:10px}
-.page{display:none}.page.active{display:block}
-.passes,.settings{padding:14px}
-.passes h2,.settings h2{margin:0 0 5px;font-size:25px}.passes>p,.settings>p{margin:0 0 12px;color:var(--muted);font-size:12px}
-.passitem{padding:12px 0;border-top:1px solid #1f2a47;display:grid;grid-template-columns:1fr auto;gap:10px}.passitem:first-child{border-top:0}.passitem b{font-size:14px}.passitem span{font-size:11px;color:var(--muted);display:block;margin-top:3px}.passitem strong{font-size:13px;color:var(--cyan)}
-.setting{padding:13px 0;border-top:1px solid #1f2a47;display:flex;justify-content:space-between;gap:12px;align-items:center}.setting:first-of-type{border-top:0}.setting div b{font-size:14px}.setting div span{font-size:11px;color:var(--muted);display:block;margin-top:3px}
-.toggle{width:48px;height:29px;border:0;border-radius:20px;background:#26314e;position:relative;flex:0 0 auto}.toggle:after{content:"";position:absolute;width:23px;height:23px;top:3px;left:3px;border-radius:50%;background:#fff;transition:.18s}.toggle.on{background:var(--cyan)}.toggle.on:after{left:22px}
-.nav{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:0;width:min(100%,560px);height:calc(var(--nav) + var(--safe-b));padding-bottom:var(--safe-b);background:#070b18f1;border-top:1px solid #202a46;backdrop-filter:blur(18px);display:grid;grid-template-columns:repeat(3,1fr)}
-.nav button{border:0;background:none;color:#7f8baa;font-size:10px;font-weight:700}.nav button.active{color:var(--cyan)}
-.sheet{position:fixed;z-index:25;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + 8px + var(--safe-b));width:min(calc(100% - 22px),538px);background:#0b1124f7;border:1px solid #2b385a;border-radius:22px;padding:14px;box-shadow:0 20px 60px #000b;display:none;backdrop-filter:blur(18px)}
-.sheet h3{margin:0 0 8px;font-size:17px}.satgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;font-size:12px;color:var(--muted)}.satgrid b{color:var(--text)}
-.arbadge{position:absolute;top:55px;left:12px;background:#0d1e25d9;border:1px solid #255263;color:#80f1ff;border-radius:999px;padding:7px 9px;font-size:10px;font-weight:800;display:none}
-@media (max-height:690px){.skycard{height:52dvh;min-height:360px}}
-</style>
 </head>
 <body>
-<div class="app">
-<header class="top">
- <div><h1>StarWatcher</h1><p class="subtitle">Satellites in your sky, calculated on your phone</p></div>
- <div class="live"><i></i>LIVE</div>
-</header>
+<div id="app" class="app">
+  <header class="top">
+    <div>
+      <h1>StarWatcher</h1>
+      <p>Live artificial satellites in your local sky</p>
+    </div>
+    <div class="live"><i></i><span>LIVE</span></div>
+  </header>
 
-<section id="skyPage" class="page active">
- <div class="card skycard">
-   <canvas id="sky"></canvas>
-   <div class="skybar"><span class="pill" id="modePill">N • zenith view</span><span class="pill" id="clock">UTC --:--:--</span></div>
-   <div class="arbadge" id="arBadge">PHONE ORIENTATION ACTIVE</div>
-   <div class="overlay" id="status"><strong>Loading Starlink catalogue…</strong><span>Reading same-origin orbital data</span></div>
- </div>
+  <main>
+    <section id="skyPage" class="page active">
+      <div class="sky-card">
+        <canvas id="sky"></canvas>
+        <div class="sky-top">
+          <span class="pill" id="orientationPill">N • zenith</span>
+          <span class="pill" id="utc">UTC --:--:--</span>
+        </div>
+        <button id="arButton" class="ar-button">◎ AR SKY</button>
+        <div id="status" class="status">
+          <b>Loading orbital catalogue…</b>
+          <span>Preparing live satellite layers</span>
+        </div>
+      </div>
 
- <div class="card controls">
-   <div class="row"><input id="place" placeholder="Village, town or postcode" autocomplete="off"><button class="btn" id="find">Find</button></div>
-   <button class="btn secondary" id="geo">⌖ Use my precise location</button>
-   <div class="location"><b id="locname">Vernouillet, France</b><span id="coords">48.7219° N · 1.3696° E</span></div>
-   <div class="metrics">
-     <div class="metric"><strong id="above">—</strong><span>above horizon</span></div>
-     <div class="metric"><strong id="sunlit">—</strong><span>sunlit</span></div>
-     <div class="metric"><strong id="high">—</strong><span>above 30°</span></div>
-   </div>
-   <div class="next">
-     <div class="nexthead"><span>NEXT HIGH PASS</span><span id="dataAge">catalogue status</span></div>
-     <div class="nextmain"><strong id="nextTime">—</strong><b id="nextDir">—</b></div>
-   </div>
- </div>
-</section>
+      <div class="timeline card">
+        <div class="timeline-head">
+          <div><b id="timeLabel">Now</b><span id="localTimeLabel">Live sky</span></div>
+          <button id="liveButton" class="mini active">LIVE</button>
+        </div>
+        <input id="timeline" type="range" min="-10" max="360" step="1" value="0">
+        <div class="ticks"><span>−10m</span><span>Now</span><span>+1h</span><span>+3h</span><span>+6h</span></div>
+      </div>
 
-<section id="passesPage" class="page">
- <div class="card passes">
-   <h2>Upcoming passes</h2>
-   <p>Sunlit Starlinks reaching at least 25° elevation during the next three hours.</p>
-   <div id="passList"><div class="note">Calculating after the orbital catalogue loads.</div></div>
- </div>
-</section>
+      <div class="layers card">
+        <div class="section-title">SATELLITE LAYERS</div>
+        <div class="layer-row">
+          <button class="chip on starlink" data-layer="starlink"><i></i>Starlink <span id="countStarlink">—</span></button>
+          <button class="chip on oneweb" data-layer="oneweb"><i></i>OneWeb <span id="countOneweb">—</span></button>
+          <button class="chip on station" data-layer="station"><i></i>ISS / Tiangong <span id="countStation">—</span></button>
+          <button class="chip on science" data-layer="science"><i></i>Hubble <span id="countScience">—</span></button>
+        </div>
+      </div>
 
-<section id="settingsPage" class="page">
- <div class="card settings">
-   <h2>Viewing</h2><p>Phone-specific display controls.</p>
-   <div class="setting"><div><b>Phone orientation mode</b><span>Rotate the sky when you physically turn the phone.</span></div><button class="toggle" id="orientationToggle"></button></div>
-   <div class="setting"><div><b>Only sunlit satellites</b><span>Hide Starlinks currently inside Earth’s shadow.</span></div><button class="toggle" id="sunlitToggle"></button></div>
-   <div class="setting"><div><b>Satellite labels</b><span>Label the highest satellites currently visible.</span></div><button class="toggle" id="labelsToggle"></button></div>
-   <button class="btn secondary" id="refreshData">↻ Reload orbital catalogue</button>
-   <div class="note" id="catalogueNote">Starlink orbital data are maintained automatically by GitHub Actions.</div>
- </div>
-</section>
+      <div class="controls card">
+        <div class="search-row">
+          <input id="place" placeholder="Village, town or postcode" autocomplete="off">
+          <button id="find" class="primary">Find</button>
+        </div>
+        <button id="geo" class="secondary">⌖ Use my precise location</button>
+        <div class="location">
+          <b id="locname">Vernouillet, France</b>
+          <span id="coords">48.7219° N · 1.3696° E</span>
+        </div>
+        <div class="metrics">
+          <div><b id="above">—</b><span>above horizon</span></div>
+          <div><b id="sunlit">—</b><span>sunlit</span></div>
+          <div><b id="bright">—</b><span>mag ≤ 4</span></div>
+        </div>
+        <div class="next-pass">
+          <div><span>NEXT BRIGHT PASS</span><small id="catalogueAge">catalogue</small></div>
+          <div><b id="nextTime">—</b><strong id="nextDesc">—</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="passesPage" class="page">
+      <div class="card page-card">
+        <h2>Upcoming passes</h2>
+        <p>Predictions are calculated locally from the current orbital catalogue.</p>
+        <div id="passList" class="pass-list"><div class="empty">Waiting for orbital data.</div></div>
+      </div>
+    </section>
+
+    <section id="alertsPage" class="page">
+      <div class="card page-card">
+        <h2>Alerts</h2>
+        <p>Foreground pass alerts work immediately. iPhone background push requires StarWatcher to be installed to the Home Screen and a push service.</p>
+        <button id="notifyButton" class="secondary">Enable pass notifications</button>
+        <div class="setting">
+          <div><b>ISS / station alert</b><span>Alert when a bright station pass is within 10 minutes.</span></div>
+          <button id="stationAlert" class="toggle on"></button>
+        </div>
+        <div class="setting">
+          <div><b>Starlink train alert</b><span>Detect dense sunlit Starlink groups near the same part of the sky.</span></div>
+          <button id="trainAlert" class="toggle on"></button>
+        </div>
+        <div class="setting">
+          <div><b>Brightness estimates</b><span>Photometric estimates use range and solar phase geometry; attitude-dependent glints remain uncertain.</span></div>
+          <button id="brightnessToggle" class="toggle on"></button>
+        </div>
+        <div id="alertStatus" class="info-box">No alert has fired in this session.</div>
+      </div>
+    </section>
+
+    <section id="settingsPage" class="page">
+      <div class="card page-card">
+        <h2>View</h2>
+        <p>Sky rendering and sensor controls.</p>
+        <div class="setting">
+          <div><b>Automatic compass alignment</b><span>Rotate the sky using the phone heading.</span></div>
+          <button id="compassToggle" class="toggle"></button>
+        </div>
+        <div class="setting">
+          <div><b>Constellation artwork</b><span>Bright-star constellation figures in J2000 coordinates.</span></div>
+          <button id="constToggle" class="toggle on"></button>
+        </div>
+        <div class="setting">
+          <div><b>Milky Way band</b><span>Galactic equator projected into the local sky.</span></div>
+          <button id="milkyToggle" class="toggle on"></button>
+        </div>
+        <div class="setting">
+          <div><b>Satellite labels</b><span>Label the most prominent current objects.</span></div>
+          <button id="labelsToggle" class="toggle on"></button>
+        </div>
+        <button id="refreshData" class="secondary">↻ Reload orbital catalogue</button>
+        <div id="catalogueInfo" class="info-box">Catalogue status unavailable.</div>
+      </div>
+    </section>
+  </main>
 </div>
 
-<div class="sheet" id="sheet">
- <h3 id="satName">Starlink</h3>
- <div class="satgrid">
-  <span>Azimuth <b id="satAz">—</b></span><span>Elevation <b id="satEl">—</b></span>
-  <span>Range <b id="satRange">—</b></span><span>Altitude <b id="satAlt">—</b></span>
-  <span>Lighting <b id="satLight">—</b></span><span>NORAD <b id="satId">—</b></span>
- </div>
+<div id="satSheet" class="sat-sheet">
+  <button id="closeSheet" class="sheet-close">×</button>
+  <h3 id="satName">Satellite</h3>
+  <div class="sat-grid">
+    <span>Elevation <b id="satEl">—</b></span>
+    <span>Azimuth <b id="satAz">—</b></span>
+    <span>Altitude <b id="satAlt">—</b></span>
+    <span>Range <b id="satRange">—</b></span>
+    <span>Brightness <b id="satMag">—</b></span>
+    <span>Lighting <b id="satLight">—</b></span>
+  </div>
+  <button id="trackInAR" class="primary full">Track in AR</button>
+</div>
+
+<div id="arView" class="ar-view">
+  <video id="camera" playsinline muted></video>
+  <canvas id="arCanvas"></canvas>
+  <div class="ar-hud">
+    <button id="closeAR">×</button>
+    <div><b>AR SKY</b><span id="arHeading">Compass —</span></div>
+    <button id="calibrateAR">◎</button>
+  </div>
+  <div id="guidance" class="guidance">Point your phone at the sky</div>
+  <div class="crosshair"><i></i><i></i></div>
 </div>
 
 <nav class="nav">
- <button id="navSky" class="active">◉<br>Sky</button>
- <button id="navPasses">⌁<br>Passes</button>
- <button id="navSettings">⚙︎<br>View</button>
+  <button data-page="sky" class="active">◉<span>Sky</span></button>
+  <button data-page="passes">⌁<span>Passes</span></button>
+  <button data-page="alerts">◌<span>Alerts</span></button>
+  <button data-page="settings">⚙︎<span>View</span></button>
 </nav>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/6.0.1/satellite.min.js"></script>
-<script>
-'use strict';
-const $=id=>document.getElementById(id),R=Math.PI/180,D=180/Math.PI,norm=x=>(x%360+360)%360;
-const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',records:[],calc:[],points:[],lastCalc:0,rot:0,drag:false,startX:0,lastX:0,sunlitOnly:false,labels:false,orientation:false,heading:0,dataMeta:null};
-const stars=[['Sirius',101.287,-16.716,-1.46],['Arcturus',213.915,19.182,-.05],['Vega',279.235,38.784,.03],['Capella',79.172,45.998,.08],['Rigel',78.634,-8.202,.13],['Procyon',114.825,5.225,.34],['Betelgeuse',88.793,7.407,.42],['Altair',297.696,8.868,.77],['Aldebaran',68.98,16.509,.85],['Pollux',116.329,28.026,1.14],['Deneb',310.358,45.28,1.25],['Regulus',152.093,11.967,1.35],['Polaris',37.955,89.264,1.98]];
-function status(a,b,w=false){const e=$('status');e.classList.toggle('warn',w);e.innerHTML='<strong>'+a+'</strong><span>'+b+'</span>'}
-function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-function julian(date){return date/86400000+2440587.5}
-function gmstApprox(date){const jd=julian(date),T=(jd-2451545)/36525;return norm(280.46061837+360.98564736629*(jd-2451545)+.000387933*T*T-T*T*T/38710000)}
-function starAltAz(ra,dec,date){const H=norm(gmstApprox(date)+state.lon-ra)*R,ph=state.lat*R,de=dec*R;const el=Math.asin(Math.sin(ph)*Math.sin(de)+Math.cos(ph)*Math.cos(de)*Math.cos(H));const az=Math.atan2(-Math.sin(H)*Math.cos(de),Math.sin(de)*Math.cos(ph)-Math.cos(de)*Math.sin(ph)*Math.cos(H));return{az:norm(az*D),el:el*D}}
-function sunVector(date){const n=julian(date)-2451545,L=norm(280.460+.9856474*n)*R,g=norm(357.528+.9856003*n)*R,lam=L+(1.915*Math.sin(g)+.020*Math.sin(2*g))*R,eps=(23.439-.0000004*n)*R,AU=149597870.7;return{x:AU*Math.cos(lam),y:AU*Math.cos(eps)*Math.sin(lam),z:AU*Math.sin(eps)*Math.sin(lam)}}
-function isSunlit(p,date){const s=sunVector(date),sl=Math.hypot(s.x,s.y,s.z),u={x:s.x/sl,y:s.y/sl,z:s.z/sl},along=p.x*u.x+p.y*u.y+p.z*u.z;if(along>0)return true;const x=p.x-along*u.x,y=p.y-along*u.y,z=p.z-along*u.z;return Math.hypot(x,y,z)>6378.137}
-function jsonToRecords(data){const out=[];for(const o of data){try{const sr=satellite.json2satrec(o);if(sr&&!sr.error)out.push({name:o.OBJECT_NAME||('STARLINK '+o.NORAD_CAT_ID),id:o.NORAD_CAT_ID,satrec:sr})}catch(e){}}return out}
-async function loadCatalogue(force=false){
- if(!window.satellite){status('Orbital engine unavailable','satellite.js could not be loaded.',true);return}
- status('Loading Starlink catalogue…','Reading ./data/starlink.json from this GitHub Pages site');
- try{
-   const r=await fetch('./data/starlink.json?'+(force?Date.now():'v=1'),{cache:force?'no-store':'default'});
-   if(!r.ok)throw new Error('HTTP '+r.status);
-   const payload=await r.json();
-   const data=Array.isArray(payload)?payload:payload.objects;
-   if(!Array.isArray(data)||!data.length)throw new Error('The repository does not yet contain populated Starlink data');
-   state.records=jsonToRecords(data);state.dataMeta=Array.isArray(payload)?null:payload.meta;
-   if(!state.records.length)throw new Error('No valid satellite records were parsed');
-   const when=state.dataMeta&&state.dataMeta.fetched_at?new Date(state.dataMeta.fetched_at):null;
-   const age=when?Math.max(0,Date.now()-when.getTime()):null;
-   $('dataAge').textContent=age==null?'catalogue loaded':age<3600000?Math.round(age/60000)+' min old':(age/3600000).toFixed(1)+' h old';
-   $('catalogueNote').textContent='Catalogue: '+state.records.length.toLocaleString()+' Starlinks'+(when?' • updated '+when.toLocaleString():'');
-   status('Starlink network loaded',state.records.length.toLocaleString()+' spacecraft available');
-   state.lastCalc=0;predictPasses()
- }catch(e){status('Starlink catalogue not populated',e.message+'. Run the “Update Starlink catalogue” workflow once in GitHub Actions.',true);$('catalogueNote').textContent='No populated catalogue found yet.'}
-}
-function calculate(date){if(!state.records.length)return[];const gmst=satellite.gstime(date),obs={longitude:state.lon*R,latitude:state.lat*R,height:.05},out=[];for(const r of state.records){try{const pv=satellite.propagate(r.satrec,date);if(!pv.position)continue;const ecf=satellite.eciToEcf(pv.position,gmst),look=satellite.ecfToLookAngles(obs,ecf),el=look.elevation*D;if(el<0)continue;const gd=satellite.eciToGeodetic(pv.position,gmst),sunlit=isSunlit(pv.position,date);out.push({name:r.name,id:r.id,az:norm(look.azimuth*D),el,range:look.rangeSat,alt:gd.height,sunlit})}catch(e){}}return out}
-const canvas=$('sky'),ctx=canvas.getContext('2d');
-function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
-function rotNow(){return state.orientation?-state.heading:state.rot}
-function project(az,el,w,h){const cx=w/2,cy=h*.54,rad=Math.min(w*.46,h*.40),rho=(90-el)/90*rad,a=(az+rotNow())*R;return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad}}
-function draw(){
- requestAnimationFrame(draw);const now=new Date(),r=canvas.getBoundingClientRect(),w=r.width,h=r.height;
- ctx.clearRect(0,0,w,h);const g=ctx.createRadialGradient(w/2,h*.52,10,w/2,h*.52,Math.max(w,h)*.7);g.addColorStop(0,'#162246');g.addColorStop(1,'#030610');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
- const p0=project(0,0,w,h),rad=p0.rad,cx=w/2,cy=h*.54;ctx.strokeStyle='#33405f';ctx.lineWidth=1;[0,30,60].forEach(el=>{ctx.beginPath();ctx.arc(cx,cy,(90-el)/90*rad,0,Math.PI*2);ctx.stroke()});
- for(let a=0;a<360;a+=45){const p=project(a,0,w,h);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.stroke()}
- ctx.fillStyle='#9eabc8';ctx.font='11px -apple-system';[['N',0],['E',90],['S',180],['W',270]].forEach(([t,a])=>{const p=project(a,-5,w,h);ctx.fillText(t,p.x-4,p.y+4)});
- for(const s of stars){const q=starAltAz(s[1],s[2],now);if(q.el<0)continue;const p=project(q.az,q.el,w,h),sz=Math.max(1.4,3.5-s[3]);ctx.beginPath();ctx.fillStyle=s[3]<.5?'#ffd77e':'#eef2ff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s[3]<1?7:2;ctx.arc(p.x,p.y,sz,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(s[3]<.9){ctx.fillStyle='#aeb9d5';ctx.font='10px -apple-system';ctx.fillText(s[0],p.x+6,p.y-4)}}
- if(Date.now()-state.lastCalc>10000){state.calc=calculate(now);state.lastCalc=Date.now();$('above').textContent=state.calc.length;$('sunlit').textContent=state.calc.filter(s=>s.sunlit).length;$('high').textContent=state.calc.filter(s=>s.el>=30).length}
- state.points=[];let drawSats=state.sunlitOnly?state.calc.filter(s=>s.sunlit):state.calc;
- for(const s of drawSats){const p=project(s.az,s.el,w,h);ctx.beginPath();ctx.fillStyle=s.sunlit?'#65e7ff':'#7182aa';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s.sunlit?9:2;ctx.arc(p.x,p.y,s.el>40?3.6:2.6,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;state.points.push({...s,x:p.x,y:p.y})}
- if(state.labels){ctx.font='9px -apple-system';ctx.fillStyle='#bfc9e0';[...drawSats].sort((a,b)=>b.el-a.el).slice(0,8).forEach(s=>{const p=project(s.az,s.el,w,h);ctx.fillText(s.name.replace('STARLINK-','SL-'),p.x+5,p.y-4)})}
- $('clock').textContent='UTC '+now.toISOString().slice(11,19)
-}
-function setLocation(lat,lon,name){state.lat=lat;state.lon=lon;state.name=name;$('locname').textContent=name;$('coords').textContent=Math.abs(lat).toFixed(4)+'° '+(lat>=0?'N':'S')+' · '+Math.abs(lon).toFixed(4)+'° '+(lon>=0?'E':'W');safeSet('sw_location',JSON.stringify({lat,lon,name}));state.lastCalc=0;predictPasses()}
-async function findPlace(){const q=$('place').value.trim();if(!q)return;$('find').disabled=true;try{let f=null;try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(q),{headers:{'Accept-Language':navigator.language||'en'}});const a=await r.json();if(a[0])f={lat:+a[0].lat,lon:+a[0].lon,name:a[0].display_name}}catch(e){}if(!f){const r=await fetch('https://photon.komoot.io/api/?limit=1&q='+encodeURIComponent(q));const j=await r.json(),x=j.features&&j.features[0];if(x){const p=x.properties||{},c=x.geometry.coordinates;f={lat:c[1],lon:c[0],name:[p.name,p.city,p.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}}}if(!f)throw new Error('Place not found');setLocation(f.lat,f.lon,f.name)}catch(e){status('Location search failed',e.message,true)}finally{$('find').disabled=false}}
-function geo(){navigator.geolocation.getCurrentPosition(p=>setLocation(p.coords.latitude,p.coords.longitude,'Current location'),e=>status('Location unavailable','Allow location access, or type your village.',true),{enableHighAccuracy:true,timeout:12000,maximumAge:300000})}
-function cardinal(a){return['N','NE','E','SE','S','SW','W','NW'][Math.round(norm(a)/45)%8]}
-function predictPasses(){if(!state.records.length)return;setTimeout(()=>{const now=Date.now(),passes=[],active=new Map();for(let m=0;m<=180;m+=3){const arr=calculate(new Date(now+m*60000)).filter(s=>s.el>=25&&s.sunlit),ids=new Set(arr.map(x=>String(x.id)));for(const s of arr){const k=String(s.id);let a=active.get(k);if(!a){a={...s,start:m,max:s.el,startAz:s.az,last:m};active.set(k,a)}if(s.el>a.max){a.max=s.el}a.last=m;a.endAz=s.az}for(const [k,a] of [...active])if(!ids.has(k)&&m-a.last>=3){passes.push(a);active.delete(k)}}passes.sort((a,b)=>a.start-b.start||b.max-a.max);const best=passes.slice(0,10),list=$('passList');list.innerHTML='';if(!best.length){list.innerHTML='<div class="note">No sunlit Starlink passes above 25° are predicted in the next 3 hours.</div>';$('nextTime').textContent='None soon';$('nextDir').textContent='';return}for(const p of best){const time=new Date(now+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),dir=cardinal(p.startAz)+' → '+cardinal(p.endAz),d=document.createElement('div');d.className='passitem';d.innerHTML='<div><b>'+p.name+'</b><span>'+dir+' · peak '+Math.round(p.max)+'°</span></div><strong>'+time+'</strong>';list.appendChild(d)}const p=best[0];$('nextTime').textContent=new Date(now+p.start*60000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('nextDir').textContent=cardinal(p.startAz)+' → '+cardinal(p.endAz)+' · '+Math.round(p.max)+'°'},100)}
-async function orientationToggle(){
- state.orientation=!state.orientation;
- if(state.orientation&&typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')state.orientation=false}catch(e){state.orientation=false}}
- $('orientationToggle').classList.toggle('on',state.orientation);$('arBadge').style.display=state.orientation?'block':'none';$('modePill').textContent=state.orientation?'phone heading':'N • zenith view'
-}
-window.addEventListener('deviceorientation',e=>{if(state.orientation){const h=typeof e.webkitCompassHeading==='number'?e.webkitCompassHeading:(e.alpha==null?0:360-e.alpha);state.heading=norm(h)}})
-canvas.addEventListener('pointerdown',e=>{if(state.orientation)return;state.drag=true;state.startX=state.lastX=e.clientX;canvas.setPointerCapture(e.pointerId)});
-canvas.addEventListener('pointermove',e=>{if(!state.drag)return;state.rot+=(e.clientX-state.lastX)*.35;state.lastX=e.clientX});
-canvas.addEventListener('pointerup',e=>{const moved=Math.abs(e.clientX-state.startX);state.drag=false;if(moved<7){const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=190;for(const p of state.points){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){best=p;bd=d}}if(best){$('sheet').style.display='block';$('satName').textContent=best.name;$('satAz').textContent=best.az.toFixed(1)+'°';$('satEl').textContent=best.el.toFixed(1)+'°';$('satRange').textContent=Math.round(best.range)+' km';$('satAlt').textContent=Math.round(best.alt)+' km';$('satLight').textContent=best.sunlit?'Sunlit':'Earth shadow';$('satId').textContent=best.id}}});
-$('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geo;$('orientationToggle').onclick=orientationToggle;
-$('sunlitToggle').onclick=()=>{state.sunlitOnly=!state.sunlitOnly;$('sunlitToggle').classList.toggle('on',state.sunlitOnly)};
-$('labelsToggle').onclick=()=>{state.labels=!state.labels;$('labelsToggle').classList.toggle('on',state.labels)};
-$('refreshData').onclick=()=>loadCatalogue(true);
-function page(p){for(const x of ['sky','passes','settings']){$(x+'Page').classList.toggle('active',x===p);$('nav'+x[0].toUpperCase()+x.slice(1)).classList.toggle('active',x===p)}$('sheet').style.display='none'}
-$('navSky').onclick=()=>page('sky');$('navPasses').onclick=()=>page('passes');$('navSettings').onclick=()=>page('settings');
-try{const l=JSON.parse(safeGet('sw_location'));if(l)setLocation(l.lat,l.lon,l.name)}catch(e){}
-window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-</script>
+<script src="./app.js"></script>
 </body>
 </html>

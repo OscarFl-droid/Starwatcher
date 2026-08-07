@@ -1,68 +1,27 @@
-# StarWatcher v2
+# StarWatcher v3 — Real-time phone sky tracker
 
-StarWatcher is a smartphone-first GitHub Pages PWA. The browser no longer requests CelesTrak directly.
+This is a full replacement for v2.
 
-## Why this build fixes the Safari problem
+## Upload
+Replace the repository contents with everything in this package, preserving:
+`.github/workflows/update-starlink.yml`
 
-A scheduled GitHub Action downloads the current Starlink catalogue from CelesTrak every two hours and writes it to:
+GitHub Pages remains `main` + `/ (root)`.
 
-`data/starlink.json`
+## One-time update after upload
+Because v3 now combines Starlink + OneWeb + ISS + Tiangong + Hubble, run:
+Actions → **Update orbital catalogue** → Run workflow.
 
-The phone then requests that file from the same `oscarfl-droid.github.io` origin as the app itself. This removes the CelesTrak browser/CORS dependency.
+The same workflow then refreshes automatically every two hours.
 
-## Install
+## Real-time rendering
+Orbital propagation runs in `orbit-worker.js`, away from the UI thread. The visible positions are continuously interpolated by `requestAnimationFrame`, giving smooth 60-fps visual motion while fresh SGP4 positions are calculated several times per second.
 
-Upload **all files and folders in this package** to the ROOT of the `Starwatcher` repository.
+## AR mode
+AR uses the rear camera plus DeviceOrientation / iOS compass heading. On iPhone, sensor and camera permissions must be granted from direct button taps. Compass accuracy depends on magnetic calibration and nearby metal/electronics.
 
-The root must contain:
+## Brightness
+Displayed magnitudes are *estimates*, not precision photometry. They use spacecraft-class baseline brightness, range and a Lambertian solar phase function. True brightness can change substantially with spacecraft attitude, panel orientation, atmosphere and observer conditions. “Train” detection identifies dense sunlit Starlink clusters; it is not a claim that every member will be naked-eye visible.
 
-- `index.html`
-- `manifest.webmanifest`
-- `sw.js`
-- `data/starlink.json`
-- `icons/`
-- `.github/workflows/update-starlink.yml`
-
-Keep GitHub Pages set to:
-
-- Branch: `main`
-- Folder: `/ (root)`
-
-## Important one-time step
-
-After uploading:
-
-1. Open the repository on GitHub.
-2. Open **Actions**.
-3. Select **Update Starlink catalogue**.
-4. Tap **Run workflow** → **Run workflow**.
-5. Wait for the green tick.
-6. The workflow will commit a populated `data/starlink.json`.
-7. GitHub Pages will redeploy automatically.
-
-After that, the catalogue refreshes every two hours.
-
-If the workflow cannot push, go to:
-Settings → Actions → General → Workflow permissions
-and select **Read and write permissions**.
-
-## iPhone PWA
-
-Open the live site in Safari, tap Share, then **Add to Home Screen**. The application is locked to portrait in the PWA manifest and caches its shell for offline launch.
-
-The star field works offline after first load. Satellite positions require a previously cached Starlink catalogue.
-
-## Current functionality
-
-- smartphone-only responsive layout
-- village/town/postcode search
-- precise browser geolocation
-- live local all-sky view
-- real-time SGP4 propagation
-- Starlink sunlit/shadow classification
-- tap satellite for azimuth, elevation, range, altitude and NORAD ID
-- next three hours of high sunlit passes
-- phone-orientation sky rotation on supported iPhones
-- PWA installability
-- offline application shell
-- same-origin orbital catalogue
+## Notifications
+This build can issue foreground/local PWA notifications when it is running. Reliable alerts while the iPhone app is completely closed require standards-based Web Push plus a server-side push subscription/scheduler. iOS supports Web Push for Home Screen web apps, but GitHub Pages alone cannot originate scheduled push messages.
