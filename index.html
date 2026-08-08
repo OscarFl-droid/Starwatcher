@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StarWatcher">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=451">
+<link rel="stylesheet" href="./styles.css?v=461">
 <title>StarWatcher</title>
 <style id="bootFallback">
 html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
@@ -27,7 +27,7 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
   <main>
     <section id="skyPage" class="page active">
       <div class="sky-card">
-        <canvas id="sky"></canvas>
+        <canvas id="sky" data-build="4.6.1"></canvas>
         <div class="sky-top">
           <span class="pill" id="orientationPill">N • zenith</span>
           <span class="pill" id="utc">UTC --:--:--</span>
@@ -127,8 +127,15 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
         <h2>View</h2>
         <p>Sky rendering and sensor controls.</p>
         <div class="setting">
-          <div><b>Automatic compass alignment</b><span>Rotate the sky using the phone heading.</span></div>
+          <div><b>Automatic compass alignment</b><span>Rotate the sky using the phone heading. Re-zero will also enable this.</span></div>
           <button id="compassToggle" class="toggle"></button>
+        </div>
+        <div id="compassInfo" class="info-box">Compass not enabled yet.</div>
+        <div class="calibration">
+          <label for="calStar"><b>Star alignment</b><span>For best accuracy, point the top of the phone toward a clearly visible star, choose it below, then calibrate.</span></label>
+          <select id="calStar"><option value="">Visible bright stars…</option></select>
+          <button id="calibrateStar" class="secondary">Align compass to selected star</button>
+          <button id="resetCompassCorrection" class="secondary subdued">Reset compass correction</button>
         </div>
         <div class="setting">
           <div><b>Constellation artwork</b><span>Bright-star constellation figures in J2000 coordinates.</span></div>
@@ -182,6 +189,6 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
   <button data-page="settings">⚙︎<span>View</span></button>
 </nav>
 
-<script src="./app.js?v=451"></script>
+<script src="./app.js?v=461"></script>
 </body>
 </html>

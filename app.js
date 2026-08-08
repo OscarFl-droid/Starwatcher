@@ -1,17 +1,37 @@
 const $=id=>document.getElementById(id),R=Math.PI/180,D=180/Math.PI,norm=x=>(x%360+360)%360;
-const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,alertsArmed:true,latestPasses:[],catalogueMeta:null,fov:180,centerAz:180,centerEl:55,transitionStart:0,transitionDuration:1000};
-const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=451');
+const state={lat:48.7219,lon:1.3696,name:'Vernouillet, France',offset:0,layers:{starlink:true,oneweb:true,station:true,science:true},target:[],display:new Map(),points:[],rot:0,drag:false,startX:0,startY:0,lastX:0,lastY:0,compass:false,heading:0,constellations:true,milky:true,labels:true,brightness:true,selected:null,workerReady:false,requestId:0,lastWorker:0,lastPasses:0,notified:new Set(),stationAlert:true,trainAlert:true,alertsArmed:true,latestPasses:[],catalogueMeta:null,fov:180,centerAz:0,centerEl:90,transitionStart:0,transitionDuration:1000,rawHeading:0,headingSource:'unknown',compassAccuracy:null,headingCorrection:Number(safeGet('sw_compass_correction')||0)};
+const canvas=$('sky'),ctx=canvas.getContext('2d'),worker=new Worker('./orbit-worker.js?v=461');
 const stars={
- Polaris:[37.95,89.26,1.98],Dubhe:[165.93,61.75,1.79],Merak:[165.46,56.38,2.37],Phecda:[178.46,53.69,2.44],Megrez:[183.86,57.03,3.31],Alioth:[193.51,55.96,1.76],Mizar:[200.98,54.93,2.23],Alkaid:[206.89,49.31,1.85],
- Caph:[2.29,59.15,2.28],Schedar:[10.13,56.54,2.24],Navi:[14.18,60.72,2.15],Ruchbah:[21.45,60.24,2.68],Segin:[28.60,63.67,3.35],
- Betelgeuse:[88.79,7.41,.42],Bellatrix:[81.28,6.35,1.64],Alnilam:[84.05,-1.20,1.69],Alnitak:[85.19,-1.94,1.74],Mintaka:[83.00,-.30,2.25],Saiph:[86.94,-9.67,2.07],Rigel:[78.63,-8.20,.13],
- Vega:[279.23,38.78,.03],Sheliak:[282.52,33.36,3.45],Sulafat:[284.74,32.69,3.25],
- Deneb:[310.36,45.28,1.25],Sadr:[305.56,40.26,2.23],Gienah:[292.68,33.97,2.46],Albireo:[292.68,27.96,3.05],
- Altair:[297.70,8.87,.77],Tarazed:[296.56,10.61,2.72],Alshain:[298.83,6.41,3.71],
- Regulus:[152.09,11.97,1.35],Denebola:[177.26,14.57,2.14],Algieba:[154.99,19.84,2.08],Zosma:[168.53,20.52,2.56],
- Aldebaran:[68.98,16.51,.85],Elnath:[81.57,28.61,1.65],
- Capella:[79.17,46.00,.08],Pollux:[116.33,28.03,1.14],Castor:[113.65,31.89,1.58],Procyon:[114.83,5.23,.34],Sirius:[101.29,-16.72,-1.46],
- Arcturus:[213.92,19.18,-.05],Spica:[201.30,-11.16,.98],Antares:[247.35,-26.43,.96]
+ Polaris:[37.9546,89.2641,1.98],
+ Caph:[2.2945,59.1498,2.27],Schedar:[10.1271,56.5373,2.23],Navi:[14.1771,60.7167,2.47],Ruchbah:[21.4542,60.2353,2.68],Segin:[28.5988,63.6700,3.38],
+ Alpheratz:[2.0969,29.0904,2.06],Mirach:[17.4330,35.6206,2.06],Almach:[30.9748,42.3297,2.26],
+ Hamal:[31.7934,23.4624,2.00],Sheratan:[28.6600,20.8080,2.64],
+ Mirfak:[51.0807,49.8612,1.79],Algol:[47.0422,40.9556,2.12],
+ Aldebaran:[68.9800,16.5093,0.85],Elnath:[81.5729,28.6074,1.65],Alcyone:[56.8712,24.1051,2.87],
+ Capella:[79.1723,45.9979,0.08],Menkalinan:[89.8822,44.9474,1.90],
+ Betelgeuse:[88.7929,7.4071,0.42],Bellatrix:[81.2828,6.3497,1.64],Mintaka:[83.0017,-0.2991,2.25],Alnilam:[84.0534,-1.2019,1.69],Alnitak:[85.1897,-1.9426,1.74],Saiph:[86.9391,-9.6696,2.07],Rigel:[78.6345,-8.2016,0.13],
+ Sirius:[101.2872,-16.7161,-1.46],Mirzam:[95.6750,-17.9559,1.98],Adhara:[104.6565,-28.9721,1.50],Wezen:[107.0979,-26.3932,1.83],
+ Procyon:[114.8255,5.2250,0.34],Gomeisa:[111.7875,8.2893,2.89],
+ Castor:[113.6494,31.8883,1.58],Pollux:[116.3289,28.0262,1.14],Alhena:[99.4279,16.3993,1.93],
+ Regulus:[152.0929,11.9672,1.35],Algieba:[154.9931,19.8415,2.08],Zosma:[168.5271,20.5237,2.56],Denebola:[177.2649,14.5721,2.14],
+ Alphard:[141.8968,-8.6586,1.98],
+ Arcturus:[213.9153,19.1824,-0.05],Muphrid:[208.6713,18.3977,2.68],Izar:[221.2467,27.0742,2.35],
+ Spica:[201.2983,-11.1613,0.98],Vindemiatrix:[195.5442,10.9591,2.83],
+ Alphecca:[233.6720,26.7147,2.22],
+ Antares:[247.3519,-26.4320,0.96],Dschubba:[240.0834,-22.6217,2.32],Acrab:[241.3593,-19.8055,2.56],Shaula:[263.4022,-37.1038,1.62],Lesath:[262.6909,-37.2958,2.70],
+ Rasalhague:[263.7336,12.5600,2.07],Cebalrai:[265.8681,4.5673,2.76],
+ Kornephoros:[247.5550,21.4896,2.77],Rasalgethi:[258.6619,14.3903,2.78],
+ Vega:[279.2347,38.7837,0.03],Sheliak:[282.5199,33.3627,3.45],Sulafat:[284.7359,32.6896,3.25],
+ Eltanin:[269.1516,51.4889,2.24],Rastaban:[262.6082,52.3014,2.79],
+ Deneb:[310.3580,45.2803,1.25],Sadr:[305.5571,40.2567,2.23],Gienah:[292.6804,33.9703,2.46],Albireo:[292.6803,27.9597,3.05],
+ Altair:[297.6958,8.8683,0.77],Tarazed:[296.5649,10.6133,2.72],Alshain:[298.8283,6.4068,3.71],
+ Enif:[326.0465,9.8750,2.39],
+ Markab:[346.1902,15.2053,2.49],Scheat:[345.9436,28.0828,2.44],
+ Fomalhaut:[344.4128,-29.6222,1.16],
+ Diphda:[10.8974,-17.9866,2.04],Menkar:[45.5700,4.0897,2.53],
+ Nunki:[283.8163,-26.2967,2.05],KausAustralis:[276.0429,-34.3846,1.79],
+ Kochab:[222.6760,74.1555,2.08],Pherkad:[230.1823,71.8340,3.05],
+ Dubhe:[165.9319,61.7510,1.79],Merak:[165.4603,56.3824,2.37],Phecda:[178.4577,53.6948,2.44],Megrez:[183.8565,57.0326,3.31],Alioth:[193.5073,55.9598,1.76],Mizar:[200.9814,54.9254,2.23],Alkaid:[206.8852,49.3133,1.85]
 };
 const lines=[['Ursa Major',['Dubhe','Merak','Phecda','Megrez','Alioth','Mizar','Alkaid']],['Cassiopeia',['Caph','Schedar','Navi','Ruchbah','Segin']],['Orion',['Betelgeuse','Bellatrix','Mintaka','Alnilam','Alnitak','Saiph','Rigel']],['Lyra',['Vega','Sheliak','Sulafat','Vega']],['Cygnus',['Deneb','Sadr','Gienah'],['Deneb','Sadr','Albireo']],['Aquila',['Tarazed','Altair','Alshain']],['Leo',['Regulus','Algieba','Zosma','Denebola']],['Gemini',['Castor','Pollux']],['Taurus',['Aldebaran','Elnath']]];
 function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -29,9 +49,45 @@ function status(a,b,type=''){
 }
 function julian(date){return date/86400000+2440587.5}
 function gmst(date){const jd=julian(date),T=(jd-2451545)/36525;return norm(280.46061837+360.98564736629*(jd-2451545)+.000387933*T*T-T*T*T/38710000)}
-function altaz(ra,dec,date){const H=norm(gmst(date)+state.lon-ra)*R,ph=state.lat*R,de=dec*R,el=Math.asin(Math.sin(ph)*Math.sin(de)+Math.cos(ph)*Math.cos(de)*Math.cos(H)),az=Math.atan2(-Math.sin(H)*Math.cos(de),Math.sin(de)*Math.cos(ph)-Math.cos(de)*Math.sin(ph)*Math.cos(H));return{az:norm(az*D),el:el*D}}
+function precessJ2000(ra,dec,date){
+  const jd=julian(date),T=(jd-2451545.0)/36525;
+  const zeta=(2306.2181*T+0.30188*T*T+0.017998*T*T*T)/3600*R;
+  const z=(2306.2181*T+1.09468*T*T+0.018203*T*T*T)/3600*R;
+  const theta=(2004.3109*T-0.42665*T*T-0.041833*T*T*T)/3600*R;
+  const a=ra*R,d=dec*R;
+  const A=Math.cos(d)*Math.sin(a+zeta);
+  const B=Math.cos(theta)*Math.cos(d)*Math.cos(a+zeta)-Math.sin(theta)*Math.sin(d);
+  const C=Math.sin(theta)*Math.cos(d)*Math.cos(a+zeta)+Math.cos(theta)*Math.sin(d);
+  return{ra:norm((Math.atan2(A,B)+z)*D),dec:Math.asin(Math.max(-1,Math.min(1,C)))*D};
+}
+function refractionDeg(el){
+  if(el<=-1||el>=89.8)return 0;
+  const x=(el+10.3/(el+5.11))*R;
+  return (1.02/Math.tan(x))/60;
+}
+function apparentElevation(el){return el+refractionDeg(el)}
+function altaz(ra,dec,date){
+  const p=precessJ2000(ra,dec,date);
+  const H=norm(gmst(date)+state.lon-p.ra)*R,ph=state.lat*R,de=p.dec*R;
+  const el=Math.asin(Math.sin(ph)*Math.sin(de)+Math.cos(ph)*Math.cos(de)*Math.cos(H));
+  const az=Math.atan2(-Math.sin(H)*Math.cos(de),Math.sin(de)*Math.cos(ph)-Math.cos(de)*Math.sin(ph)*Math.cos(H));
+  const geometricEl=el*D;
+  return{az:norm(az*D),el:apparentElevation(geometricEl),geometricEl};
+}
 function galToEq(l,b=0){const lr=l*R,br=b*R;const x=Math.cos(br)*Math.cos(lr),y=Math.cos(br)*Math.sin(lr),z=Math.sin(br);const ex=-.0548755604*x+.4941094279*y-.8676661490*z,ey=-.8734370902*x-.4448296300*y-.1980763734*z,ez=-.4838350155*x+.7469822445*y+.4559837762*z;return{ra:norm(Math.atan2(ey,ex)*D),dec:Math.asin(ez)*D}}
 function viewTime(){return new Date(Date.now()+state.offset*60000)}
+function screenAngle(){
+  const a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(typeof window.orientation==='number'?window.orientation:0);
+  return Number.isFinite(a)?a:0;
+}
+function rawScreenHeading(){
+  return state.headingSource==='webkit'
+    ? norm(state.rawHeading)
+    : norm(state.rawHeading+screenAngle());
+}
+function correctedHeading(){return norm(rawScreenHeading()+state.headingCorrection)}
+function headingDelta(a,b){return ((a-b+540)%360)-180}
+
 function rotation(){return state.compass?-state.heading:state.rot}
 function project(az,el,w,h){
   if(state.fov>=180){
@@ -48,24 +104,117 @@ function project(az,el,w,h){
   const rho=(angularDistance/(state.fov/2))*radius;
   return{x:cx+rho*Math.sin(a),y:cy-rho*Math.cos(a),rad:radius,visible:el>=0&&angularDistance<=state.fov/2};
 }
+function compassLabel(deg){
+  const d=norm(deg);
+  if(d===0)return'N';
+  if(d===90)return'E';
+  if(d===180)return'S';
+  if(d===270)return'W';
+  return Math.round(d)+'°';
+}
+function drawCompassEdge(w,h){
+  const focused=state.fov<180;
+  const cx=w/2,cy=focused?h*.52:h*.54;
+  const rad=focused?Math.min(w*.46,h*.42):Math.min(w*.46,h*.405);
+  const topHeading=state.compass?state.heading:(focused?state.centerAz:0);
+  ctx.save();
+  ctx.font='9px -apple-system';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  for(let bearing=0;bearing<360;bearing+=30){
+    const ang=(bearing-topHeading+(focused?0:state.rot))*R;
+    const sin=Math.sin(ang),cos=Math.cos(ang);
+    const x1=cx+(rad-5)*sin,y1=cy-(rad-5)*cos;
+    const x2=cx+rad*sin,y2=cy-rad*cos;
+    ctx.strokeStyle=(bearing%90===0)?'rgba(174,192,226,.48)':'rgba(130,149,186,.26)';
+    ctx.lineWidth=(bearing%90===0)?1.2:.8;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const lr=rad-15,lx=cx+lr*sin,ly=cy-lr*cos;
+    ctx.fillStyle=(bearing%90===0)?'rgba(202,216,241,.76)':'rgba(150,165,197,.50)';
+    ctx.fillText(compassLabel(bearing),lx,ly);
+  }
+  // phone-heading index at the top of the field
+  if(state.compass){
+    ctx.fillStyle='rgba(98,227,255,.85)';
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-rad+3);ctx.lineTo(cx-4,cy-rad+10);ctx.lineTo(cx+4,cy-rad+10);ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
 function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
 function drawMilky(date,w,h){if(!state.milky)return;const tracks=[-8,0,8];for(const b of tracks){ctx.beginPath();let started=false;for(let l=0;l<=360;l+=3){const e=galToEq(l,b),q=altaz(e.ra,e.dec,date);if(q.el<0){started=false;continue}const p=project(q.az,q.el,w,h);if(!p.visible){started=false;continue}if(!started){ctx.moveTo(p.x,p.y);started=true}else ctx.lineTo(p.x,p.y)}ctx.strokeStyle=b===0?'rgba(124,151,220,.13)':'rgba(124,151,220,.055)';ctx.lineWidth=b===0?20:12;ctx.stroke()}}
-function drawStars(date,w,h){const pos={};for(const [name,s] of Object.entries(stars)){const q=altaz(s[0],s[1],date);if(q.el<0)continue;const pp=project(q.az,q.el,w,h);if(pp.visible)pos[name]=pp}if(state.constellations){ctx.lineWidth=.8;ctx.strokeStyle='rgba(126,151,205,.28)';for(const item of lines){const seqs=Array.isArray(item[1][0])?item.slice(1):[item[1]];for(const seq of seqs){ctx.beginPath();let begun=false;for(const n of seq){if(!pos[n]){begun=false;continue}if(!begun){ctx.moveTo(pos[n].x,pos[n].y);begun=true}else ctx.lineTo(pos[n].x,pos[n].y)}ctx.stroke()}}}
- for(const [name,s] of Object.entries(stars)){const p=pos[name];if(!p)continue;const size=Math.max(1.25,3.6-s[2]);ctx.beginPath();ctx.fillStyle=s[2]<.5?'#ffd977':'#edf2ff';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s[2]<1?6:2;ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(s[2]<2.6){ctx.fillStyle='#aeb9d5';ctx.font='9px -apple-system';ctx.fillText(name,p.x+5,p.y-4)}}}
+function airmass(el){
+  if(el<=0)return 99;
+  return 1/(Math.sin(el*R)+0.50572*Math.pow(el+6.07995,-1.6364));
+}
+function drawStars(date,w,h){
+  const pos={},visible=[];
+  state.visibleStars=[];
+  for(const [name,s] of Object.entries(stars)){
+    const q=altaz(s[0],s[1],date);
+    if(q.el<=0)continue;
+    const pp=project(q.az,q.el,w,h);
+    const ext=q.el>3?0.18*Math.max(0,airmass(q.el)-1):2.5;
+    const apparentMag=s[2]+ext;
+    if(pp.visible){
+      pos[name]=pp;
+      visible.push({name,ra:s[0],dec:s[1],mag:s[2],apparentMag,az:q.az,el:q.el,p:pp});
+      state.visibleStars.push({name,az:q.az,el:q.el,apparentMag});
+    }
+  }
+  if(state.constellations){
+    ctx.lineWidth=.75;ctx.strokeStyle='rgba(126,151,205,.24)';
+    for(const item of lines){
+      const seqs=Array.isArray(item[1][0])?item.slice(1):[item[1]];
+      for(const seq of seqs){
+        ctx.beginPath();let begun=false;
+        for(const n of seq){
+          if(!pos[n]){begun=false;continue}
+          if(!begun){ctx.moveTo(pos[n].x,pos[n].y);begun=true}else ctx.lineTo(pos[n].x,pos[n].y)
+        }
+        ctx.stroke();
+      }
+    }
+  }
+  visible.sort((a,b)=>a.apparentMag-b.apparentMag);
+  const labelSet=new Set(visible.filter(s=>s.el>6&&s.apparentMag<3.25).slice(0,24).map(s=>s.name));
+  for(const s of visible){
+    const size=Math.max(1.15,3.7-s.mag);
+    ctx.beginPath();
+    ctx.fillStyle=s.mag<.6?'#ffd977':'#edf2ff';
+    ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=s.apparentMag<1.3?6:2;
+    ctx.arc(s.p.x,s.p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    if(labelSet.has(s.name)){
+      ctx.fillStyle='#aeb9d5';ctx.font='9px -apple-system';
+      ctx.fillText(s.name,s.p.x+5,s.p.y-4);
+    }
+  }
+}
 function interpAngle(a,b,k){let d=((b-a+540)%360)-180;return norm(a+d*k)}
 function updateDisplay(){const k=Math.max(0,Math.min(1,(performance.now()-state.transitionStart)/state.transitionDuration));const seen=new Set();for(const s of state.target){const id=String(s.id);seen.add(id);let d=state.display.get(id);if(!d){d={...s,fromAz:s.az,fromEl:s.el,toAz:s.az,toEl:s.el};state.display.set(id,d)}d.az=interpAngle(d.fromAz??d.az,d.toAz??d.az,k);d.el=(d.fromEl??d.el)+((d.toEl??d.el)-(d.fromEl??d.el))*k;d.alt=s.alt;d.range=s.range;d.sunlit=s.sunlit;d.mag=s.mag;d.layer=s.layer;d.name=s.name;d.phase=s.phase}for(const[id,d]of state.display){if(!seen.has(id)&&d.el<-2)state.display.delete(id)}}
 function beginTransition(next){const cur=new Map();for(const[id,d]of state.display)cur.set(id,{az:d.az,el:d.el});state.target=next;for(const s of next){const id=String(s.id);let d=state.display.get(id);if(!d){d={...s,fromAz:s.az,fromEl:s.el,toAz:s.az,toEl:s.el};state.display.set(id,d)}else{const c=cur.get(id)||{az:d.az,el:d.el};d.fromAz=c.az;d.fromEl=c.el;d.toAz=s.az;d.toEl=s.el}}state.transitionStart=performance.now();state.transitionDuration=1000}
 function satColor(layer,sunlit){if(layer==='station')return'#ffd56e';if(layer==='science')return'#ffa76b';if(layer==='oneweb')return sunlit?'#c69cff':'#6f6788';return sunlit?'#62e3ff':'#647494'}
-function drawSatellites(w,h){updateDisplay();state.points=[];let arr=[...state.display.values()].filter(s=>s.el>=0&&state.layers[s.layer]);arr.sort((a,b)=>a.mag-b.mag);for(const s of arr){const p=project(s.az,s.el,w,h);if(!p.visible)continue;const c=satColor(s.layer,s.sunlit),size=s.layer==='station'?5:s.mag<3?4:2.7;ctx.beginPath();ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=s.sunlit?9:2;ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(state.labels&&(s.layer==='station'||s.layer==='science'||s.mag<3.5)){ctx.fillStyle='#d9e1f5';ctx.font='9px -apple-system';ctx.fillText(s.name.replace('STARLINK-','SL-'),p.x+6,p.y-4)}if(state.selected&&String(state.selected.id)===String(s.id)){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,size+7,0,Math.PI*2);ctx.stroke();}state.points.push({...s,x:p.x,y:p.y})}
+function drawSatellites(w,h){updateDisplay();state.points=[];let arr=[...state.display.values()].filter(s=>s.el>=0&&state.layers[s.layer]);arr.sort((a,b)=>a.mag-b.mag);for(const s of arr){const drawEl=apparentElevation(s.el);const p=project(s.az,drawEl,w,h);if(!p.visible)continue;const c=satColor(s.layer,s.sunlit),size=s.layer==='station'?5:s.mag<3?4:2.7;ctx.beginPath();ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=s.sunlit?9:2;ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(state.labels&&(s.layer==='station'||s.layer==='science'||s.mag<3.5)){ctx.fillStyle='#d9e1f5';ctx.font='9px -apple-system';ctx.fillText(s.name.replace('STARLINK-','SL-'),p.x+6,p.y-4)}if(state.selected&&String(state.selected.id)===String(s.id)){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,size+7,0,Math.PI*2);ctx.stroke();}state.points.push({...s,apparentEl:drawEl,x:p.x,y:p.y})}
  $('above').textContent=arr.length;$('sunlit').textContent=arr.filter(x=>x.sunlit).length;$('bright').textContent=arr.filter(x=>x.sunlit&&x.mag<=4).length;
  const count=l=>arr.filter(x=>x.layer===l).length;$('countStarlink').textContent=count('starlink');$('countOneweb').textContent=count('oneweb');$('countStation').textContent=count('station');$('countScience').textContent=count('science')}
-function draw(){requestAnimationFrame(draw);const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,date=viewTime();ctx.clearRect(0,0,w,h);const g=ctx.createRadialGradient(w/2,h*.52,20,w/2,h*.52,Math.max(w,h)*.65);g.addColorStop(0,'#152142');g.addColorStop(1,'#020510');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);drawMilky(date,w,h);ctx.lineWidth=1;ctx.strokeStyle='#33405e';ctx.fillStyle='#96a3c0';ctx.font='11px -apple-system';if(state.fov>=180){const p0=project(0,0,w,h),rad=p0.rad,cx=w/2,cy=h*.54;for(const el of[0,30,60]){ctx.beginPath();ctx.arc(cx,cy,(90-el)/90*rad,0,Math.PI*2);ctx.stroke()}for(let a=0;a<360;a+=45){const p=project(a,0,w,h);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.stroke()}for(const[t,a]of[['N',0],['E',90],['S',180],['W',270]]){const p=project(a,-5,w,h);ctx.fillText(t,p.x-4,p.y+4)}}else{const cx=w/2,cy=h*.52,rad=Math.min(w,h*.9)/2;ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-rad,cy);ctx.lineTo(cx+rad,cy);ctx.moveTo(cx,cy-rad);ctx.lineTo(cx,cy+rad);ctx.stroke();ctx.fillText(cardinal(state.centerAz)+' '+Math.round(state.centerAz)+'°',cx-25,cy-rad+16);ctx.fillText(Math.round(state.centerEl)+'° elev.',cx-22,cy+rad-10)}drawStars(date,w,h);drawSatellites(w,h);$('utc').textContent='UTC '+date.toISOString().slice(11,19)}
+function draw(){requestAnimationFrame(draw);const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,date=viewTime();ctx.clearRect(0,0,w,h);const g=ctx.createRadialGradient(w/2,h*.52,20,w/2,h*.52,Math.max(w,h)*.65);g.addColorStop(0,'#152142');g.addColorStop(1,'#020510');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);drawMilky(date,w,h);ctx.lineWidth=1;ctx.strokeStyle='#33405e';ctx.fillStyle='#96a3c0';ctx.font='11px -apple-system';if(state.fov>=180){const p0=project(0,0,w,h),rad=p0.rad,cx=w/2,cy=h*.54;for(const el of[0,30,60]){ctx.beginPath();ctx.arc(cx,cy,(90-el)/90*rad,0,Math.PI*2);ctx.stroke()}for(let a=0;a<360;a+=45){const p=project(a,0,w,h);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(p.x,p.y);ctx.stroke()}for(const[t,a]of[['N',0],['E',90],['S',180],['W',270]]){const p=project(a,-5,w,h);ctx.fillText(t,p.x-4,p.y+4)}}else{const cx=w/2,cy=h*.52,rad=Math.min(w,h*.9)/2;ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-rad,cy);ctx.lineTo(cx+rad,cy);ctx.moveTo(cx,cy-rad);ctx.lineTo(cx,cy+rad);ctx.stroke();const head=state.compass?state.heading:state.centerAz;
+ctx.fillText(cardinal(head)+' '+Math.round(norm(head))+'°',cx-24,cy-rad+16);
+ctx.fillText('ZENITH',cx,cy+4)}drawCompassEdge(w,h);drawStars(date,w,h);drawSatellites(w,h);$('utc').textContent='UTC '+date.toISOString().slice(11,19)}
 function requestPositions(force=false){if(!state.workerReady)return;const now=performance.now();if(!force&&now-state.lastWorker<950)return;state.lastWorker=now;worker.postMessage({type:'calc',requestId:++state.requestId,time:viewTime().getTime(),lat:state.lat,lon:state.lon,layers:state.layers})}
 setInterval(()=>requestPositions(),1000);
 worker.onmessage=e=>{const m=e.data;if(m.type==='ready'){state.workerReady=true;status('Live orbital engine ready',m.count.toLocaleString()+' objects loaded','good');requestPositions(true);requestPasses(true)}if(m.type==='positions'){beginTransition(m.positions);checkAlerts(m.positions)}if(m.type==='passes'){renderPasses(m.passes)}};
 async function loadCatalogue(force=false){status('Loading orbital catalogue…','Starlink, OneWeb, stations and Hubble');try{let r=await fetch('./data/catalogue.json?'+(force?Date.now():'v=4'),{cache:force?'no-store':'default'});if(!r.ok)throw new Error('HTTP '+r.status);const p=await r.json();if(!p.objects||p.objects.length<100)throw new Error('Catalogue has not been populated yet');state.catalogueMeta=p.meta||{};worker.postMessage({type:'catalogue',objects:p.objects});const dt=p.meta&&p.meta.fetched_at?new Date(p.meta.fetched_at):null;if(dt){const age=(Date.now()-dt)/3600000;$('catalogueAge').textContent=age<1?Math.round(age*60)+' min old':age.toFixed(1)+' h old'}$('catalogueInfo').textContent=(p.meta.count||p.objects.length).toLocaleString()+' orbital records • '+(dt?'updated '+dt.toLocaleString():'update time unknown')}catch(e){status('Orbital catalogue unavailable',e.message+'. Run the GitHub “Update orbital catalogue” workflow once.','warn')}}
 function requestPasses(force=false){if(!state.workerReady)return;if(!force&&Date.now()-state.lastPasses<60000)return;state.lastPasses=Date.now();worker.postMessage({type:'passes',time:Date.now(),lat:state.lat,lon:state.lon,layers:state.layers,minutes:360,step:2,minEl:20,maxMag:5})}
 function cardinal(a){return['N','NE','E','SE','S','SW','W','NW'][Math.round(norm(a)/45)%8]}
+function updateCompassInfo(){
+  const box=$('compassInfo');if(!box)return;
+  if(!state.compass){box.textContent='Compass not enabled yet.';return}
+  const acc=state.compassAccuracy;
+  const accText=(typeof acc==='number'&&acc>=0)?(' ±'+Math.round(acc)+'°'):'';
+  const corr=Math.abs(state.headingCorrection)<.05?'':(' • correction '+(state.headingCorrection>=0?'+':'')+state.headingCorrection.toFixed(1)+'°');
+  const quality=(typeof acc==='number'&&acc<0)?' • calibration unreliable':((typeof acc==='number'&&acc>20)?' • low accuracy':'');
+  box.textContent='Heading '+Math.round(state.heading)+'° '+cardinal(state.heading)+accText+corr+quality+' • '+(state.headingSource==='webkit'?'iPhone compass':'orientation fallback');
+}
 function updateOrientationPill(){
   const az=state.compass?norm(state.heading):norm(state.centerAz);
   if(state.fov>=180){
@@ -136,8 +285,44 @@ function setLocation(lat,lon,name){
   safeSet('sw3_loc',JSON.stringify({lat,lon,name}));
   state.lastPasses=0;
   requestPositions(true);
-  requestPasses(true);
+  requestPasses(true);populateCalibrationStars();
   $('alertStatus').textContent='Location updated to '+name+'. Pass alerts and predictions have been recalculated.';
+}
+function populateCalibrationStars(){
+  const sel=$('calStar');if(!sel)return;
+  const date=viewTime(),items=[];
+  for(const [name,s] of Object.entries(stars)){
+    const q=altaz(s[0],s[1],date);
+    if(q.el<15)continue;
+    const ext=0.18*Math.max(0,airmass(q.el)-1);
+    items.push({name,mag:s[2]+ext,az:q.az,el:q.el});
+  }
+  items.sort((a,b)=>a.mag-b.mag);
+  const keep=sel.value;
+  sel.innerHTML='<option value="">Visible bright stars…</option>';
+  for(const x of items.slice(0,18)){
+    const o=document.createElement('option');
+    o.value=x.name;o.textContent=x.name+' — '+cardinal(x.az)+' '+Math.round(x.az)+'° / '+Math.round(x.el)+'° high';
+    sel.appendChild(o);
+  }
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+}
+async function calibrateCompassToStar(){
+  try{if(!state.compass)await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn');return}
+  const name=$('calStar').value;
+  if(!name||!stars[name]){status('Choose a calibration star','Select a clearly visible bright star first.','warn');return}
+  const s=stars[name],q=altaz(s[0],s[1],viewTime());
+  const raw=rawScreenHeading();
+  state.headingCorrection=headingDelta(q.az,raw);
+  safeSet('sw_compass_correction',String(state.headingCorrection));
+  state.heading=correctedHeading();
+  updateOrientationPill();updateCompassInfo();
+  $('compassInfo').textContent+=' • aligned on '+name+' at true az '+Math.round(q.az)+'°';
+  status('Compass star-aligned',name+' fixes magnetic declination and sensor heading offset for this session/location.','good');
+}
+function resetCompassCorrection(){
+  state.headingCorrection=0;safeSet('sw_compass_correction','0');state.heading=correctedHeading();
+  updateOrientationPill();updateCompassInfo();
 }
 async function findPlace(){
   const q=$('place').value.trim();
@@ -190,7 +375,7 @@ function epochAgeText(s){
   if(h<48)return h.toFixed(1)+' h';
   return (h/24).toFixed(1)+' d';
 }
-function satClick(e){const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=250;for(const p of state.points){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){best=p;bd=d}}if(!best)return;state.selected=best;$('satName').textContent=best.name;$('satEl').textContent=best.el.toFixed(1)+'°';$('satAz').textContent=best.az.toFixed(1)+'° '+cardinal(best.az);$('satAlt').textContent=Math.round(best.alt)+' km';
+function satClick(e){const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=null,bd=250;for(const p of state.points){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){best=p;bd=d}}if(!best)return;state.selected=best;$('satName').textContent=best.name;$('satEl').textContent=(best.apparentEl??best.el).toFixed(1)+'° apparent';$('satAz').textContent=best.az.toFixed(1)+'° '+cardinal(best.az);$('satAlt').textContent=Math.round(best.alt)+' km';
 $('satRange').textContent=Math.round(best.range)+' km';
 $('satSpeed').textContent=best.speed?best.speed.toFixed(2)+' km/s':'—';
 $('satPeriod').textContent=best.period?best.period.toFixed(1)+' min':'—';
@@ -201,13 +386,21 @@ $('satRole').textContent=satelliteRole(best);
 $('satService').textContent=serviceYear(best);
 $('satEpochAge').textContent=epochAgeText(best);
 $('satSheet').style.display='block'}
-async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;$('compassToggle').classList.add('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone rotates with the phone compass.';}
+async function enableCompass(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw new Error('Sensor permission denied')}state.compass=true;state.heading=correctedHeading();$('compassToggle').classList.add('on');updateOrientationPill();updateCompassInfo();populateCalibrationStars();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone rotates with the phone compass.';}
 window.addEventListener('deviceorientation',e=>{
-  const h=typeof e.webkitCompassHeading==='number'
-    ? e.webkitCompassHeading
-    : (e.alpha==null?state.heading:360-e.alpha);
-  state.heading=norm(h);
-  if(state.compass)updateOrientationPill();
+  if(typeof e.webkitCompassHeading==='number'){
+    state.rawHeading=norm(e.webkitCompassHeading);
+    state.headingSource='webkit';
+  }else if(e.alpha!=null){
+    state.rawHeading=norm(360-e.alpha);
+    state.headingSource='alpha';
+  }
+  if(typeof e.webkitCompassAccuracy==='number')state.compassAccuracy=e.webkitCompassAccuracy;
+  state.heading=correctedHeading();
+  if(state.compass){
+    updateOrientationPill();
+    updateCompassInfo();
+  }
 });
 canvas.addEventListener('pointerdown',e=>{state.drag=true;state.startX=state.lastX=e.clientX;state.startY=state.lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointermove',e=>{
   if(!state.drag)return;
@@ -240,7 +433,7 @@ function setFov(v){
 document.querySelectorAll('.fov-chip').forEach(b=>b.onclick=()=>setFov(+b.dataset.fov));
 document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{const l=b.dataset.layer;state.layers[l]=!state.layers[l];b.classList.toggle('on',state.layers[l]);requestPositions(true);requestPasses(true)});
 $('find').onclick=findPlace;$('place').addEventListener('keydown',e=>{if(e.key==='Enter')findPlace()});$('geo').onclick=geolocate;$('closeSheet').onclick=()=>{$('satSheet').style.display='none'};$('centerSelected').onclick=()=>{if(!state.selected)return;state.centerAz=state.selected.az;state.centerEl=90;if(state.fov>=180)setFov(30);else updateOrientationPill();$('satSheet').style.display='none'};
-$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone. Enable compass alignment to match the phone heading.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
+$('compassToggle').onclick=async()=>{if(state.compass){state.compass=false;$('compassToggle').classList.remove('on');updateOrientationPill();updateCompassInfo();if(state.fov<180)$('fovHint').textContent='Focused '+state.fov+'° zenith cone. Enable compass alignment to match the phone heading.';}else try{await enableCompass()}catch(e){status('Compass unavailable',e.message,'warn')}};
 function toggle(id,key){$(id).onclick=()=>{state[key]=!state[key];$(id).classList.toggle('on',state[key])}}toggle('constToggle','constellations');toggle('milkyToggle','milky');toggle('labelsToggle','labels');toggle('brightnessToggle','brightness');toggle('stationAlert','stationAlert');toggle('trainAlert','trainAlert');
 $('notifyButton').onclick=async()=>{
   state.alertsArmed=true;
@@ -265,20 +458,23 @@ $('notifyButton').onclick=async()=>{
   }
 };
 $('dismissAlert').onclick=()=>{$('alertBanner').classList.remove('show')};
+$('calibrateStar').onclick=calibrateCompassToStar;$('resetCompassCorrection').onclick=resetCompassCorrection;
 $('refreshData').onclick=()=>loadCatalogue(true);
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav button').forEach(n=>n.classList.remove('active'));$(b.dataset.page+'Page').classList.add('active');b.classList.add('active')});
 try{const l=JSON.parse(safeGet('sw3_loc'));if(l)setLocation(l.lat,l.lon,l.name)}catch(e){}
 
 
-function rezeroView(){
+async function rezeroView(){
+  try{if(!state.compass)await enableCompass()}catch(e){}
   state.centerEl=90;
-  state.centerAz=state.compass?norm(state.heading):0;
+  state.centerAz=state.compass?state.heading:0;
   state.rot=0;
   updateOrientationPill();
+  updateCompassInfo();
   if(state.fov<180){
     $('fovHint').textContent=state.compass
-      ? 'Re-zeroed to the zenith. The map rotates with the phone compass.'
-      : 'Re-zeroed to the zenith. Enable compass alignment to rotate the map with the phone.';
+      ? 'Zenith re-zeroed. Turn the phone: the compass ring and sky rotate together.'
+      : 'Zenith re-zeroed. Enable compass alignment to rotate the map with the phone.';
   }
   const b=$('rezeroSky');
   if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,700)}
@@ -313,7 +509,7 @@ document.addEventListener('fullscreenchange',()=>{
   }
 });
 
-window.addEventListener('resize',resize);resize();requestAnimationFrame(draw);loadCatalogue();
+window.addEventListener('resize',resize);resize();populateCalibrationStars();setInterval(populateCalibrationStars,60000);requestAnimationFrame(draw);loadCatalogue();
 
 // v4.5.1 recovery: StarWatcher intentionally runs without a service worker.
 // Remove older cached workers so GitHub Pages always serves the current files.

@@ -1,21 +1,20 @@
-# StarWatcher v4.5.1 emergency recovery
+# StarWatcher v4.6.1 — validated alignment build
 
-This build disables the service worker deliberately.
+Corrections found during validation:
+1. The v4.6 generated package did not actually contain the expanded star catalogue. v4.6.1 replaces the catalogue explicitly with ~80 named bright reference stars.
+2. The focused-view grid still displayed the previous arbitrary centre/elevation labels. It now reports current bearing on the rim and ZENITH at the centre.
+3. iPhone `webkitCompassHeading` was being passed through a screen-angle correction intended only for alpha-based orientation fallbacks. v4.6.1 treats iPhone compass heading directly and applies screen-angle correction only to the fallback path.
 
-Why:
-The live site entered a blank-page state. StarWatcher does not require a service worker for live orbital tracking, so v4.5.1 removes that extra caching layer and actively unregisters/deletes older StarWatcher service-worker caches.
+Retained and checked:
+- J2000 → date precession for stellar coordinates.
+- Local sidereal conversion to altitude/azimuth.
+- Bennett-style atmospheric refraction for apparent star and satellite elevations.
+- Dynamic star prominence/label selection using magnitude, altitude and approximate extinction.
+- 30° edge compass with emphasized N/E/S/W.
+- Star-based compass calibration with a persisted local correction.
+- One-second SGP4 worker updates and requestAnimationFrame interpolation.
+- Location application and pass recalculation.
+- In-app ISS/station and Starlink-train alerts.
+- No service worker.
 
-Retained:
-- true zenith Re-zero
-- compass-rotating zenith sky
-- 15/30/60/90/all-sky fields
-- expanded bright-star catalogue
-- live satellite engine
-- location selection
-- alerts
-- fullscreen
-- richer satellite details
-
-Upload all files in this overlay over the repository root.
-Do not replace data/catalogue.json.
-You may delete the old sw.js from the GitHub repository; v4.5.1 does not use it.
+Upload as an overlay. Keep `data/catalogue.json` unchanged.

@@ -61,3 +61,9 @@ input[type=range]{width:100%;accent-color:var(--cyan);margin:13px 0 4px}.ticks{d
 .sky-card.sky-fullscreen .sky-actions{
   top:calc(54px + env(safe-area-inset-top));right:14px
 }
+
+.calibration{margin-top:12px;padding:12px;border:1px solid #1f2c49;border-radius:16px;background:#060b17}
+.calibration label b{display:block;font-size:13px}
+.calibration label span{display:block;margin-top:3px;color:#8d9aba;font-size:10px;line-height:1.35}
+.calibration select{width:100%;margin-top:10px;border:1px solid #293758;border-radius:13px;background:#0a1121;color:#eef3ff;padding:11px;font:inherit}
+.secondary.subdued{background:#0d1427;color:#9aa8c5}
