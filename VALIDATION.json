@@ -1,0 +1,74 @@
+{
+  "release": "v5.1",
+  "overall": "PASS",
+  "gates": {
+    "syntax_app": true,
+    "syntax_worker": true,
+    "dom_refs_complete": true,
+    "asset_version_styles": true,
+    "asset_version_app": true,
+    "asset_version_worker": true,
+    "no_service_worker": true,
+    "monotonic_time": true,
+    "render_raf": true,
+    "orbit_1_second": true,
+    "location_recalc_positions": true,
+    "location_recalc_passes": true,
+    "station_10min_alert": true,
+    "alerts_use_shared_clock": true,
+    "train_alert": true,
+    "visibility_likely": true,
+    "visibility_possible": true,
+    "visibility_dim": true,
+    "visibility_shadow": true,
+    "track_request": true,
+    "track_worker": true,
+    "track_response": true,
+    "diagnostics": true,
+    "precession": true,
+    "refraction": true,
+    "independent_transform": true,
+    "compass_ticks": true,
+    "compass_calibration": true,
+    "build_marker": true,
+    "worker_marker": true,
+    "coordinate_crosscheck_lt_0_01deg": true,
+    "star_motion_nonzero": true
+  },
+  "missing_dom_ids": [],
+  "coordinate_crosscheck_deg": {
+    "Vega": 0.0,
+    "Polaris": 0.0,
+    "Arcturus": 0.0,
+    "Deneb": 0.0,
+    "Sirius": 0.0,
+    "Altair": 0.0
+  },
+  "vega_motion_10min_deg": 1.9534053807472949,
+  "worker_contract": {
+    "app_to_worker": [
+      "calc",
+      "catalogue",
+      "passes",
+      "track"
+    ],
+    "worker_receives": [
+      "calc",
+      "catalogue",
+      "passes",
+      "track"
+    ],
+    "worker_to_app": [
+      "passes",
+      "positions",
+      "ready",
+      "track"
+    ],
+    "app_receives": [
+      "passes",
+      "positions",
+      "ready",
+      "track"
+    ]
+  }
+}

@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StarWatcher">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="stylesheet" href="./styles.css?v=461">
+<link rel="stylesheet" href="./styles.css?v=51">
 <title>StarWatcher</title>
 <style id="bootFallback">
 html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
@@ -67,6 +67,16 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
           <button class="chip on oneweb" data-layer="oneweb"><i></i>OneWeb <span id="countOneweb">—</span></button>
           <button class="chip on station" data-layer="station"><i></i>ISS / Tiangong <span id="countStation">—</span></button>
           <button class="chip on science" data-layer="science"><i></i>Hubble <span id="countScience">—</span></button>
+        </div>
+      </div>
+
+      <div class="visibility-legend card">
+        <div class="section-title">SATELLITE VISIBILITY</div>
+        <div class="visibility-row">
+          <span><i class="vis-dot likely"></i>Likely naked-eye</span>
+          <span><i class="vis-dot possible"></i>Possible / faint</span>
+          <span><i class="vis-dot dim"></i>Too faint</span>
+          <span><i class="vis-dot shadow"></i>Earth shadow</span>
         </div>
       </div>
 
@@ -151,6 +161,18 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
         </div>
         <button id="refreshData" class="secondary">↻ Reload orbital catalogue</button>
         <div id="catalogueInfo" class="info-box">Catalogue status unavailable.</div>
+        <div class="diagnostics">
+          <div class="section-title">ASTRONOMY DIAGNOSTICS</div>
+          <div class="diag-grid">
+            <div><span>UTC</span><b id="diagUtc">—</b></div>
+            <div><span>Julian date</span><b id="diagJd">—</b></div>
+            <div><span>Local sidereal</span><b id="diagLst">—</b></div>
+            <div><span>Coordinate check</span><b id="diagCross">—</b></div><div><span>Build</span><b id="diagBuild">v5.1</b></div><div><span>Orbit worker</span><b id="diagWorker">waiting</b></div>
+          </div>
+          <div class="diag-star"><b>Vega</b><span id="diagVegaNow">Now: —</span><span id="diagVega10">+10 min: —</span><span id="diagVegaMotion">Motion: —</span></div>
+          <div class="diag-star"><b>Polaris</b><span id="diagPolaris">—</span></div>
+          <div id="diagStatus" class="info-box">Waiting for validation cycle.</div>
+        </div>
       </div>
     </section>
   </main>
@@ -189,6 +211,6 @@ html,body{margin:0;min-height:100%;background:#030611;color:#f5f7ff}
   <button data-page="settings">⚙︎<span>View</span></button>
 </nav>
 
-<script src="./app.js?v=461"></script>
+<script src="./app.js?v=51"></script>
 </body>
 </html>
